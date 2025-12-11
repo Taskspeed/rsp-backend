@@ -103,6 +103,8 @@ class CriteriaController extends Controller
                 'job_position' => $jobPosition,
                 'job_office' => $jobOffice,
                 'status' => $criteria->status,
+                'ip' => $request->ip(),
+                'user_agent' => $request->header('User-Agent'),
             ])
             ->log($criteria->wasRecentlyCreated
                 ? "User '{$user->name}' created criteria for {$jobPosition} position in {$jobOffice}"
@@ -121,7 +123,7 @@ class CriteriaController extends Controller
 
 
     // deleting the criteria of job_post
-    public function delete($id)
+    public function delete($id, Request $request)
     {
 
         $user = Auth::user(); // Get the authenticated user
@@ -150,6 +152,8 @@ class CriteriaController extends Controller
                 'name' => $user->name,
                 'job_position' => $jobPosition,
                 'job_office' => $jobOffice,
+                'ip' => $request->ip(),
+                'user_agent' => $request->header('User-Agent'),
             ])
             ->log("User '{$user->name}' deleted criteria for {$jobPosition} position in {$jobOffice}");
 
@@ -307,6 +311,8 @@ class CriteriaController extends Controller
                 'performed_by' => $user->name,
                 'sg_min' => $criteriaRange->sg_min,
                 'sg_max' => $criteriaRange->sg_max,
+                'ip' => $request->ip(),
+                'user_agent' => $request->header('User-Agent'),
             ])
             ->log("User '{$user->name}' created a new SG range: {$criteriaRange->sg_min}-{$criteriaRange->sg_max}.");
 
@@ -405,6 +411,8 @@ class CriteriaController extends Controller
                 'name' => $user->name,
                 'sg_min' => $criteriaRange->sg_min,
                 'sg_max' => $criteriaRange->sg_max,
+                'ip' => $request->ip(),
+                'user_agent' => $request->header('User-Agent'),
             ])
             ->log("User '{$user->name}' updated the SG range to {$criteriaRange->sg_min}-{$criteriaRange->sg_max} for this criteria library.");
         // --------------------------
@@ -519,6 +527,8 @@ class CriteriaController extends Controller
             ->performedOn($criteria)
             ->withProperties([
                 'name' => $user->name,
+                 'ip' => $request->ip(),
+                 'user_agent' => $request->header('User-Agent'),
             ])
             ->log("User '{$user->name}' deleted a criteria.");
 

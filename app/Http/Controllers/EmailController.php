@@ -117,6 +117,7 @@ class EmailController extends Controller
                             'venue'          => $venue,
                             'ip'             => request()->ip(),
                             'user_agent'     => request()->header('User-Agent'),
+                            
                         ])
                         ->log("{$user->name} sent an interview invitation to {$fullname} for the {$position} position in {$office}.");
                 }
@@ -270,6 +271,8 @@ class EmailController extends Controller
                             'position'       => $position,
                             'office'         => $office,
                             'date'           => now()->format('F d, Y'),
+                            'ip' => $request->ip(),
+                            'user_agent' => $request->header('User-Agent'),
                             'education_remark'   => $submission->education_remark ?? 'N/A',
                             'experience_remark'  => $submission->experience_remark ?? 'N/A',
                             'training_remark'    => $submission->training_remark ?? 'N/A',

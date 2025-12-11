@@ -599,6 +599,8 @@ class JobBatchesRspController extends Controller
                 'updated_fields' => $jobValidated,
                 'criteria_updated' => $criteriaValidated ?? null,
                 'file_uploaded' => $request->hasFile('fileUpload') ? $fileName : 'No file uploaded',
+                'ip' => $request->ip(),
+                'user_agent' => $request->header('User-Agent'),
             ])
             ->log("{$user->name} Update  the job post for position {$jobBatch->Position}.");
 
@@ -691,6 +693,8 @@ class JobBatchesRspController extends Controller
                 'old_job_post_id' => $jobValidated['old_job_id'],
                 'criteria' => $criteriaValidated,
                 'file_uploaded' => $fileName,
+                'ip' => $request->ip(),
+                'user_agent' => $request->header('User-Agent'),
             ])
             // ->log('Republished a job post');
             ->log("{$user->name} Republished the job post for position {$jobBatch->Position}.");

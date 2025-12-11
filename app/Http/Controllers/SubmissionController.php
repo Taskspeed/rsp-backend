@@ -122,6 +122,8 @@ class SubmissionController extends Controller
                 'experience_remark' => $validated['experience_remark'] ?? null,
                 'training_remark' => $validated['training_remark'] ?? null,
                 'eligibility_remark' => $validated['eligibility_remark'] ?? null,
+                'ip' => $request->ip(),
+                'user_agent' => $request->header('User-Agent'),
                 ])
                 ->log("'{$user->name}' evaluated '{$fullname}' submission.");
         }

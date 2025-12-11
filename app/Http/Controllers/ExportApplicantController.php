@@ -139,6 +139,8 @@ class ExportApplicantController extends Controller
                 'position' => $position,
                 'office' => $office,
                 'applicants_added_count' => count($insertData),
+                'ip' => $request->ip(),
+                'user_agent' => $request->header('User-Agent'),
             ])
             ->log("User '{$user->name}' added " . count($insertData) . " applicant(s) to the job post '{$position}' in '{$office}'.");
         return response()->json([

@@ -21,33 +21,32 @@ class CriteriaRequest extends FormRequest
             'job_batches_rsp_id.*' => 'exists:job_batches_rsp,id',
 
 
-
-            'education' => 'required|array',
+            'education' => 'required|array|min:1',
             'education.*.weight' => 'required|string',
             'education.*.description' => 'required|string',
             'education.*.percentage' => 'required|integer',
 
 
 
-            'experience' => 'required|array',
+            'experience' => 'required|array|min:1',
             'experience.*.weight' => 'required|string',
             'experience.*.description' => 'required|string',
             'experience.*.percentage' => 'required|integer',
 
 
-            'training' => 'required|array',
+            'training' => 'required|array|min:1',
             'training.*.weight' => 'required|string',
             'training.*.description' => 'required|string',
             'training.*.percentage' => 'required|integer',
 
 
-            'performance' => 'required|array',
+            'performance' => 'required|array|min:1',
             'performance.*.weight' => 'required|string',
             'performance.*.description' => 'required|string',
             'performance.*.percentage' => 'required|integer',
 
 
-            'behavioral' => 'required|array',
+            'behavioral' => 'required|array|min:1',
             'behavioral.*.weight' => 'required|string',
             'behavioral.*.description' => 'required|string',
             'behavioral.*.percentage' => 'required|integer',

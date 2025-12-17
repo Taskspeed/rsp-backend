@@ -18,13 +18,19 @@ class ApplicantHiringService
 
 
 {
-
+     // hire an employee
     public function hireApplicant($submissionId,Request $request)
     {
         DB::beginTransaction();
         try {
             // These methods exist on Illuminate\Http\Request
             $request->validate([
+
+                // service
+                'SepDate' => 'nullable|date',
+                'SepCause' => 'nullable|string|max:255',
+
+                // temprog
                 'sepdate' => 'nullable|date',
                 'sepcause' => 'nullable|string|max:255',
                 'vicename' => 'nullable|string|max:255',
@@ -197,10 +203,10 @@ class ApplicantHiringService
             'BirthDate'    => $applicant->date_of_birth,
             'BirthPlace'   => $applicant->place_of_birth ?? null,
             'Address'      => trim(($applicant->residential_house ?? null) . ' ' .
-                ($applicant->residential_street ?? null) . ' ' .
-                ($applicant->residential_barangay ?? null) . ' ' .
-                ($applicant->residential_city ?? null) . ' ' .
-                ($applicant->residential_province ?? null)),
+                            ($applicant->residential_street ?? null) . ' ' .
+                            ($applicant->residential_barangay ?? null) . ' ' .
+                            ($applicant->residential_city ?? null) . ' ' .
+                            ($applicant->residential_province ?? null)),
             'Citizenship'  => $applicant->citizenship ?? null,
             'Religion'     => $applicant->religion ?? null,
             'Heights'      => $applicant->height ?? null,
@@ -386,11 +392,35 @@ class ApplicantHiringService
         $itemNo = $jobPost->ItemNo;
         $pageNo = $jobPost->PageNo;
 
-        // Move old records to history, then delete old records
+
+        $activeService = DB::table('xService')
+            ->where('ControlNo', $controlNo)   // ensure active record
+            ->orderBy('PMID', 'DESC')
+            ->first();
+
+        // 2. If employee has active service, SepDate and SepCause are required
+        if ($activeService) {
+
+            if (empty($job->SepDate) || empty($job->SepCause)) {
+                throw new \Exception("SepDate and SepCause are required when re-appointing an active employee.");
+            }
+
+            DB::table('xService')
+                ->where('PMID', $activeService->PMID)
+                ->update([
+                    'SepDate'  => Carbon::parse($job->SepDate)->format('Y-m-d'),
+                    'SepCause' => $job->SepCause,
+                ]);
+        }
+
+
+        // Move old records to history, then delete old records<|fim_middle|><|fim_middle|><|fim_middle|>
         $oldRecords = DB::table('tempRegAppointmentReorg')->where('ControlNo', $controlNo)->get();
+
         foreach ($oldRecords as $row) {
             TempRegHistory::create((array) $row);
         }
+
         DB::table('tempRegAppointmentReorg')->where('ControlNo', $controlNo)->delete();
 
         $designation = DB::table('yDesignation')
@@ -418,14 +448,12 @@ class ApplicantHiringService
         $fromDate = Carbon::now()->startOfDay();
         $toDate   = $fromDate->copy()->addYears(50);
 
-
         $Division = DB::table('yDivision')
             ->where('Descriptions', $jobPost->Division)
             ->orWhere('Codes', $jobPost->Division)
             ->first();
 
         $DivCode = $Division->Codes ?? '00000';
-
 
         $Section = DB::table('ySection')
             ->where('Descriptions', $jobPost->Section)
@@ -445,6 +473,8 @@ class ApplicantHiringService
             ->where('ControlNo', $controlNo)
             ->where('ToDate', '>', $fromDate)
             ->update(['ToDate' => Carbon::parse($fromDate)->subDay()]);
+
+
 
         DB::table('xService')->insert([
             'ControlNo'    => $controlNo, // 1

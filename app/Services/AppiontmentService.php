@@ -46,6 +46,10 @@ class AppiontmentService
             'ToDate' => 'required|date',
             'Status' => 'required|string',
 
+            'SepDate' => 'required|date',
+            'SepCause' => 'required|string',
+
+
             //posting date
             'post_date'   => 'required|date',
             'end_date' => 'required|date',
@@ -136,9 +140,35 @@ class AppiontmentService
   private function updatePlantillaStructure($job)
     {
 
+
         $tblStructureDetails_ID = $job->tblStructureDetails_ID;
         $itemNo = $job->ItemNo;
         $pageNo = $job->PageNo;
+        $controlNo = $job->controlNo;
+
+        // // 1. Get the latest active service record
+
+        // // 1. Get the latest active service record
+        // $activeService = DB::table('xService')
+        //     ->where('ControlNo', $controlNo)   // ensure active record
+        //     ->orderBy('PMID', 'DESC')
+        //     ->first();
+
+        // // 2. If employee has active service, SepDate and SepCause are required
+        // if ($activeService) {
+
+        //     if (empty($job->SepDate) || empty($job->SepCause)) {
+        //         throw new \Exception("SepDate and SepCause are required when re-appointing an active employee.");
+        //     }
+
+        //     DB::table('xService')
+        //         ->where('PMID', $activeService->PMID)
+        //         ->update([
+        //             'SepDate'  => Carbon::parse($job->SepDate)->format('Y-m-d'),
+        //             'SepCause' => $job->SepCause,
+        //         ]);
+        // }
+
 
         // Move old records to history, then delete old records
         $oldRecords = DB::table('tempRegAppointmentReorg')->where('ControlNo', $job->controlNo)->get();

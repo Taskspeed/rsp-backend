@@ -4,10 +4,13 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\LogController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\xPDSController;
+use App\Http\Controllers\EmailController;
 use App\Http\Controllers\RaterController;
 use App\Http\Controllers\UsersController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\CriteriaController;
 use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PlantillaController;
 use App\Http\Controllers\RaterAuthController;
@@ -22,15 +25,21 @@ use App\Http\Controllers\ExportApplicantController;
 use App\Http\Controllers\StructureDetailController;
 use App\Http\Controllers\OnFundedPlantillaController;
 use App\Http\Controllers\ApplicantSubmissionController;
-use App\Http\Controllers\EmailController;
-use App\Http\Controllers\ScheduleController;
 
 
 // testing route
+// Route::get('/storage-status', function () {
+//     $storagePath = storage_path('app/public');
+//     $freeMB = round(disk_free_space($storagePath) / 1024 / 1024, 2);
+//     return "Free storage space: {$freeMB} MB";
+// });
 
-Route::get('test/{controlNo}',[EmployeeController::class, 'findLastdata']);
+
+// Route::get('test/{controlNo}',[EmployeeController::class, 'findLastdata']);
 
 //
+Route::get('/generate', [ReportController::class, 'generatePlantilla']); // role of user
+
 
 Route::post('/verify-code', [VerificationController::class, 'verifyCode']); // verify the code
 Route::post('/send-verification', [VerificationController::class, 'sendVerification']); // sending code on email
@@ -110,7 +119,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/jobpost', [AppointmentController::class, 'jobPost']);
         Route::get('/', [AppointmentController::class, 'findAppointment']);
         Route::delete('/delete/{ControlNo}', [AppointmentController::class, 'deleteControlNo']);
-        Route::post('/', [AppointmentController::class, 'appiontment']); // elective and  co-terminous also regular
+        Route::post('/', [AppointmentController::class, 'appiontment']); // manual appointment
         Route::get('/position', [AppointmentController::class, 'position']);
         Route::get('/vice/name/{position}/{status}', [AppointmentController::class, 'getEmployeePreviousDesignation']);
     });
@@ -127,7 +136,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('/plantilla/funded', OnFundedPlantillaController::class);
     Route::prefix('structure-details')->group(function () {
         Route::post('/update-funded', [StructureDetailController::class, 'updateFunded']);
-        Route::post('/update-pageno', [StructureDetailController::class, 'updatePageNo']);
+        // Route::post('/update-pageno', [StructureDetailController::class, 'updatePageNo']);
     });
 
     Route::prefix('plantillaData')->group(function () {
@@ -239,9 +248,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/update/{controlNo}', [EmployeeController::class, 'updateEmployeeCredentials']); //  updating the  employee appoitment
         // Route::post('/confirmation', [EmployeeController::class, 'approveUpdate']); //  updating the  employee appoitment
 
-        Route::get('/request', [EmployeeController::class, 'fetchApprovingTable']);
+        // Route::get('/request', [EmployeeController::class, 'fetchApprovingTable']);
         Route::get('/{ControlNo}', [EmployeeController::class, 'appliedEmployee']);
-        Route::get('/old/credentail/{pendingId}/{type}', [EmployeeController::class, 'fetchOldAndNew']);
+        // Route::get('/old/credentail/{pendingId}/{type}', [EmployeeController::class, 'fetchOldAndNew']);
     });
 
     Route::prefix('email')->group(function () {

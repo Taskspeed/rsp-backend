@@ -106,39 +106,41 @@ class AppointmentController extends Controller
         return response()->json($status);
     }
 
-    // public function employee()
-    // {
 
-    //     $employee = DB::table('xPersonal')->select('ControlNo', 'Firstname', 'Surname', 'Occupation')->get();
-
-    //     return response()->json($employee);
-
-
-    // }
-    public function employee(Request $request)
+    // need to fix to pagination and search optimize make readable
+    public function employee()
     {
-        // Get page size (default 10)
-        $perPage = (int) $request->input('per_page', 10);
 
-        // Get search parameter
-        $search = $request->input('search', '');
-
-        $query = DB::table('xPersonal')
-            ->select('ControlNo', 'Firstname', 'Surname', 'Occupation');
-
-        // Add search filter if search term exists
-        if (!empty($search)) {
-            $query->where(function ($q) use ($search) {
-                $q->where('Firstname', 'LIKE', "%{$search}%")
-                    ->orWhere('Surname', 'LIKE', "%{$search}%")
-                    ->orWhere('ControlNo', 'LIKE', "%{$search}%");
-            });
-        }
-
-        $employee = $query->paginate($perPage);
+        $employee = DB::table('xPersonal')->select('ControlNo', 'Firstname', 'Surname', 'Occupation')->get();
 
         return response()->json($employee);
+
+
     }
+    // public function employee(Request $request)
+    // {
+    //     // Get page size (default 10)
+    //     $perPage = (int) $request->input('per_page', 10);
+
+    //     // Get search parameter
+    //     $search = $request->input('search', '');
+
+    //     $query = DB::table('xPersonal')
+    //         ->select('ControlNo', 'Firstname', 'Surname', 'Occupation');
+
+    //     // Add search filter if search term exists
+    //     if (!empty($search)) {
+    //         $query->where(function ($q) use ($search) {
+    //             $q->where('Firstname', 'LIKE', "%{$search}%")
+    //                 ->orWhere('Surname', 'LIKE', "%{$search}%")
+    //                 ->orWhere('ControlNo', 'LIKE', "%{$search}%");
+    //         });
+    //     }
+
+    //     $employee = $query->paginate($perPage);
+
+    //     return response()->json($employee);
+    // }
 
     // public function employee(Request $request)
     // {

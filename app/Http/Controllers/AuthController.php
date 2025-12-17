@@ -359,6 +359,7 @@ class AuthController extends Controller
                         'viewPlantillaAccess' => $request->input('permissions.viewPlantillaAccess', false),
                         'modifyPlantillaAccess' => $request->input('permissions.modifyPlantillaAccess', false),
                         'viewJobpostAccess' => $request->input('permissions.viewJobpostAccess', false),
+                        
                         'modifyJobpostAccess' => $request->input('permissions.modifyJobpostAccess', false),
                         'viewActivityLogs' => $request->input('permissions.viewActivityLogs', false),
                         'userManagement' => $request->input('permissions.userManagement', false),

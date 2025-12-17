@@ -29,8 +29,9 @@ class ReportController extends Controller
 
             'a.Steps as step',
             'a.Birthdate as birthdate',
-            'a.Steps as step',
-            'p.level'
+
+            'p.level',
+
             )
             ->orderBy('p.office')
             ->orderBy('p.office2')
@@ -38,6 +39,8 @@ class ReportController extends Controller
             ->orderBy('p.division')
             ->orderBy('p.section')
             ->orderBy('p.unit')
+
+
             // ->orderBy('p.ItemNo')
 
             ->get();
@@ -219,13 +222,14 @@ class ReportController extends Controller
     {
         return [
           'controlNo' => $row->ControlNo,
-
+            'Ordr'         => $row->Ordr,
             'itemNo'    => $row->ItemNo,
             'position'   => $row->position,
             'sg'         => $row->SG,
 
             'authorized' => '1,340,724.00',
             'actual' => '1,340,724.00',
+            'step' => $row->step ? $row->step : '1',
 
             'code' => '11',
             'type' => 'C',
@@ -241,7 +245,7 @@ class ReportController extends Controller
             'funded'     => $row->Funded,
             // 'name'       => $row->ControlNo ? $row->Name1 : 'VACANT',
             'status'     => $row->ControlNo ? $row->Status : 'VACANT',
-            'pics'       => $row->Pics,
+            // 'pics'       => $row->Pics,
             // 'office'     => $row->office,
             // 'office2'    => $row->office2,
             // 'division'   => $row->division,

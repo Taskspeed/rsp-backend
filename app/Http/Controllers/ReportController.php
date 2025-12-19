@@ -9,84 +9,80 @@ class ReportController extends Controller
 {
     public function generatePlantilla(Request $request)
     {
-        // $rows = DB::table('vwplantillastructure')
-        //     ->orderBy('office')
-        //     ->orderBy('office2')
-        //     ->orderBy('group')
-        //     ->orderBy('division')
-        //     ->orderBy('section')
-        //     ->orderBy('unit')
-        //     ->orderBy('ItemNo')
-        //     ->get();
-
         $rows = DB::table('vwplantillastructure as p')
             ->leftJoin('vwActive as a', 'a.ControlNo', '=', 'p.ControlNo')
+            ->leftJoin('vwofficearrangement as o', 'o.Office', '=', 'p.office')
             ->select(
                 'p.*',
-            'a.Surname as lastname',
-            'a.Firstname as firstname',
-            'a.MIddlename as middlename',
-
-            'a.Steps as step',
-            'a.Birthdate as birthdate',
-
-            'p.level',
-
+                'a.Status as status',
+                'a.Steps as steps',
+                'a.Birthdate as birthdate',
+                'a.Surname as lastname',
+                'a.Firstname as firstname',
+                'a.MIddlename as middlename',
+                'a.Grades as Grades',
+                'p.level',
+                'o.office_sort'
             )
-            ->orderBy('p.office')
+            ->orderBy('o.office_sort')
             ->orderBy('p.office2')
             ->orderBy('p.group')
             ->orderBy('p.division')
             ->orderBy('p.section')
             ->orderBy('p.unit')
-
-
-            // ->orderBy('p.ItemNo')
-
+            ->orderBy('p.ItemNo')
             ->get();
-
 
         if ($rows->isEmpty()) {
             return response()->json([]);
         }
 
+        $allControlNos = $rows->pluck('ControlNo')->filter()->unique()->values();
+
+        $xServices = DB::table('xService')
+            ->whereIn('ControlNo', $allControlNos)
+            ->select('ControlNo', 'Status', 'Steps', 'FromDate', 'ToDate', 'Designation', 'SepCause', 'Grades')
+            ->get();
+
+        $xServiceByControl = $xServices->groupBy('ControlNo');
+
         $result = [];
 
         foreach ($rows->groupBy('office') as $officeName => $officeRows) {
+            $officeSort = $officeRows->first()->office_sort;
+            $officeLevel = $officeRows->first()->level;
 
             $officeData = [
-                'office'    => $officeName,
-                'employees' => [],
-                'office2'   => []
+                'office'      => $officeName,
+                'level'       => $officeLevel,
+                'office_sort' => $officeSort,
+                'employees'   => [],
+                'office2'     => []
             ];
 
-            /* ================= OFFICE LEVEL ================= */
             $officeEmployees = $officeRows->filter(
                 fn($r) =>
                 is_null($r->office2) &&
-                    is_null($r->group) &&
-                    is_null($r->division) &&
-                    is_null($r->section) &&
-                    is_null($r->unit)
+                is_null($r->group) &&
+                is_null($r->division) &&
+                is_null($r->section) &&
+                is_null($r->unit)
             );
-
             $officeData['employees'] = $officeEmployees
-                ->map(fn($r) => $this->mapEmployee($r))
+                ->sortBy('ItemNo')
+                ->map(fn($r) => $this->mapEmployee($r, $xServiceByControl))
                 ->values();
 
-            // REMOVE office-level employees
             $remainingOfficeRows = $officeRows->reject(
                 fn($r) =>
                 is_null($r->office2) &&
-                    is_null($r->group) &&
-                    is_null($r->division) &&
-                    is_null($r->section) &&
-                    is_null($r->unit)
+                is_null($r->group) &&
+                is_null($r->division) &&
+                is_null($r->section) &&
+                is_null($r->unit)
             );
 
-            /* ================= OFFICE2 ================= */
             foreach ($remainingOfficeRows->groupBy('office2') as $office2Name => $office2Rows) {
-
                 $office2Data = [
                     'office2'   => $office2Name,
                     'employees' => [],
@@ -96,26 +92,24 @@ class ReportController extends Controller
                 $office2Employees = $office2Rows->filter(
                     fn($r) =>
                     is_null($r->group) &&
-                        is_null($r->division) &&
-                        is_null($r->section) &&
-                        is_null($r->unit)
+                    is_null($r->division) &&
+                    is_null($r->section) &&
+                    is_null($r->unit)
                 );
-
                 $office2Data['employees'] = $office2Employees
-                    ->map(fn($r) => $this->mapEmployee($r))
+                    ->sortBy('ItemNo')
+                    ->map(fn($r) => $this->mapEmployee($r, $xServiceByControl))
                     ->values();
 
                 $remainingOffice2Rows = $office2Rows->reject(
                     fn($r) =>
                     is_null($r->group) &&
-                        is_null($r->division) &&
-                        is_null($r->section) &&
-                        is_null($r->unit)
+                    is_null($r->division) &&
+                    is_null($r->section) &&
+                    is_null($r->unit)
                 );
 
-                /* ================= GROUP ================= */
                 foreach ($remainingOffice2Rows->groupBy('group') as $groupName => $groupRows) {
-
                     $groupData = [
                         'group'     => $groupName,
                         'employees' => [],
@@ -125,24 +119,22 @@ class ReportController extends Controller
                     $groupEmployees = $groupRows->filter(
                         fn($r) =>
                         is_null($r->division) &&
-                            is_null($r->section) &&
-                            is_null($r->unit)
+                        is_null($r->section) &&
+                        is_null($r->unit)
                     );
-
                     $groupData['employees'] = $groupEmployees
-                        ->map(fn($r) => $this->mapEmployee($r))
+                        ->sortBy('ItemNo')
+                        ->map(fn($r) => $this->mapEmployee($r, $xServiceByControl))
                         ->values();
 
                     $remainingGroupRows = $groupRows->reject(
                         fn($r) =>
                         is_null($r->division) &&
-                            is_null($r->section) &&
-                            is_null($r->unit)
+                        is_null($r->section) &&
+                        is_null($r->unit)
                     );
 
-                    /* ================= DIVISION ================= */
-                    foreach ($remainingGroupRows->groupBy('division') as $divisionName => $divisionRows) {
-
+                    foreach ($remainingGroupRows->sortBy('DivisionID')->groupBy('division') as $divisionName => $divisionRows) {
                         $divisionData = [
                             'division'  => $divisionName,
                             'employees' => [],
@@ -152,22 +144,20 @@ class ReportController extends Controller
                         $divisionEmployees = $divisionRows->filter(
                             fn($r) =>
                             is_null($r->section) &&
-                                is_null($r->unit)
+                            is_null($r->unit)
                         );
-
                         $divisionData['employees'] = $divisionEmployees
-                            ->map(fn($r) => $this->mapEmployee($r))
+                            ->sortBy('ItemNo')
+                            ->map(fn($r) => $this->mapEmployee($r, $xServiceByControl))
                             ->values();
 
                         $remainingDivisionRows = $divisionRows->reject(
                             fn($r) =>
                             is_null($r->section) &&
-                                is_null($r->unit)
+                            is_null($r->unit)
                         );
 
-                        /* ================= SECTION ================= */
-                        foreach ($remainingDivisionRows->groupBy('section') as $sectionName => $sectionRows) {
-
+                        foreach ($remainingDivisionRows->sortBy('SectionID')->groupBy('section') as $sectionName => $sectionRows) {
                             $sectionData = [
                                 'section'   => $sectionName,
                                 'employees' => [],
@@ -178,9 +168,9 @@ class ReportController extends Controller
                                 fn($r) =>
                                 is_null($r->unit)
                             );
-
                             $sectionData['employees'] = $sectionEmployees
-                                ->map(fn($r) => $this->mapEmployee($r))
+                                ->sortBy('ItemNo')
+                                ->map(fn($r) => $this->mapEmployee($r, $xServiceByControl))
                                 ->values();
 
                             $remainingSectionRows = $sectionRows->reject(
@@ -188,13 +178,12 @@ class ReportController extends Controller
                                 is_null($r->unit)
                             );
 
-                            /* ================= UNIT ================= */
-                            foreach ($remainingSectionRows->groupBy('unit') as $unitName => $unitRows) {
-
+                            foreach ($remainingSectionRows->sortBy('UnitID')->groupBy('unit') as $unitName => $unitRows) {
                                 $sectionData['units'][] = [
                                     'unit'      => $unitName,
                                     'employees' => $unitRows
-                                        ->map(fn($r) => $this->mapEmployee($r))
+                                        ->sortBy('ItemNo')
+                                        ->map(fn($r) => $this->mapEmployee($r, $xServiceByControl))
                                         ->values()
                                 ];
                             }
@@ -214,43 +203,113 @@ class ReportController extends Controller
             $result[] = $officeData;
         }
 
+        $result = collect($result)->sortBy('office_sort')->values()->all();
+
         return response()->json($result);
     }
 
-    /* ================= EMPLOYEE MAPPER ================= */
-    private function mapEmployee($row)
+    private function mapEmployee($row, $xServiceByControl)
     {
+        $controlNo = $row->ControlNo;
+        $status = $row->status;
+
+        $dateOriginalAppointed = null;
+        $dateLastPromotion = null;
+
+        if ($controlNo && isset($xServiceByControl[$controlNo])) {
+            $xList = $xServiceByControl[$controlNo]
+                ->filter(fn ($svc) => $svc->Status == $status)
+                ->sortBy('FromDate')
+                ->values();
+
+            if ($xList->count()) {
+                // Appointment date logic
+                if (strtolower($status) === 'regular') {
+                    $first = $xList->first();
+                    $designation = $first->Designation ?? null;
+
+                    $resignedRows = $xList->filter(function ($svc) use ($designation) {
+                        return (
+                            ($svc->Designation ?? null) == $designation
+                            && isset($svc->SepCause)
+                            && strtolower(trim($svc->SepCause)) === 'resigned'
+                        );
+                    });
+
+                    if ($resignedRows->count()) {
+                        $resignedToDate = $resignedRows->sortByDesc('ToDate')->first()->ToDate;
+                        $nextRow = $xList
+                            ->filter(fn ($svc) => strtotime($svc->FromDate) > strtotime($resignedToDate))
+                            ->sortBy(fn ($svc) => strtotime($svc->FromDate) - strtotime($resignedToDate))
+                            ->first();
+                        $dateOriginalAppointed = $nextRow ? $nextRow->FromDate : null;
+                    } else {
+                        $dateOriginalAppointed = $first->FromDate;
+                    }
+                } else {
+                    $dateOriginalAppointed = $xList->last()->FromDate;
+                }
+
+                // Promotion logic (numeric, non-strict grades)
+                $numericGrades = $xList->pluck('Grades')->filter(function($g) {
+                    return is_numeric($g);
+                })->map(function($g) {
+                    return (float)$g;
+                });
+
+                $highestGrade = $numericGrades->max();
+
+                // Appointed Grades
+                $appointedRow = $xList->first(fn($svc) => $svc->FromDate == $dateOriginalAppointed);
+                $initialGrades = !is_null($appointedRow) ? $appointedRow->Grades : ($row->Grades ?? null);
+
+                // Log for debugging
+                logger([
+                    'xactiveGrades' => $row->Grades,
+                    'appointedRowGrades' => isset($appointedRow) ? $appointedRow->Grades : null,
+                    'initialGrades' => $initialGrades,
+                    'highestGrade' => $highestGrade,
+                    'all xService Grades' => $xList->pluck('Grades'),
+                    'numericGrades' => $numericGrades,
+                    'dateOriginalAppointed' => $dateOriginalAppointed,
+                ]);
+
+                if (!is_null($dateOriginalAppointed) && !is_null($highestGrade) && !is_null($initialGrades)) {
+                    // if current/initial grade is greater than or equal to highest, there is no promotion
+                    if ($initialGrades >= $highestGrade) { // Non-strict comparison
+                        $dateLastPromotion = null;
+                    } else {
+                        $promotionRows = $xList
+                            ->filter(fn($svc) => $svc->Grades == $highestGrade)
+                            ->sortBy('FromDate')
+                            ->values();
+
+                        $dateLastPromotion = $promotionRows->count() ? $promotionRows->first()->FromDate : null;
+                    }
+                }
+            }
+        }
+
         return [
-          'controlNo' => $row->ControlNo,
-            'Ordr'         => $row->Ordr,
-            'itemNo'    => $row->ItemNo,
-            'position'   => $row->position,
-            'sg'         => $row->SG,
-
-            'authorized' => '1,340,724.00',
-            'actual' => '1,340,724.00',
-            'step' => $row->step ? $row->step : '1',
-
-            'code' => '11',
-            'type' => 'C',
-
-            'level'     => $row->level,
-
-            'lastname' => $row->ControlNo ? $row->lastname : 'VACANT',
-            'firstname' => $row->ControlNo ? $row->firstname : 'VACANT',
-            'middlename' => $row->ControlNo ? $row->middlename : 'VACANT',
-            'birthdate' => $row->ControlNo ? $row->birthdate : 'VACANT',
-
-
-            'funded'     => $row->Funded,
-            // 'name'       => $row->ControlNo ? $row->Name1 : 'VACANT',
-            'status'     => $row->ControlNo ? $row->Status : 'VACANT',
-            // 'pics'       => $row->Pics,
-            // 'office'     => $row->office,
-            // 'office2'    => $row->office2,
-            // 'division'   => $row->division,
-            // 'section'    => $row->section,
-            // 'unit'       => $row->unit,
+            'controlNo'   => $row->ControlNo,
+            'Ordr'        => $row->Ordr,
+            'itemNo'      => $row->ItemNo,
+            'position'    => $row->position,
+            'grades'      => $row->Grades,
+            'authorized'  => '1,340,724.00',
+            'actual'      => '1,340,724.00',
+            'step'        => $row->steps ? $row->steps : '1',
+            'code'        => '11',
+            'type'        => 'C',
+            'level'       => $row->level,
+            'lastname'    => $row->ControlNo ? $row->lastname : 'VACANT',
+            'firstname'   => $row->ControlNo ? $row->firstname : 'VACANT',
+            'middlename'  => $row->ControlNo ? $row->middlename : 'VACANT',
+            'birthdate'   => $row->ControlNo ? $row->birthdate : 'VACANT',
+            'funded'      => $row->Funded,
+            'status'      => $row->ControlNo ? $row->Status : 'VACANT',
+            'dateOriginalAppointed' => $dateOriginalAppointed,
+            'dateLastPromotion'     => $dateLastPromotion,
         ];
     }
 }

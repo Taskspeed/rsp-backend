@@ -7,11 +7,9 @@ use Illuminate\Database\Eloquent\Model;
 class Schedule extends Model
 {
     //
-    protected  $table = 'Schedules';
+    protected  $table = 'schedules';
     protected $fillable = [
-        'submission_id',
         'batch_name',
-        'full_name',
         'date_interview',
         'time_interview',
         'venue_interview'
@@ -20,6 +18,12 @@ class Schedule extends Model
     {
         return $this->belongsTo(Submission::class, 'submission_id');
     }
+    public function scheduleApplicants()
+    {
+        return $this->hasMany(SchedulesApplicant::class, 'schedule_id');
+    }
+
+
     public function job_batch_rsp()
     {
         return $this->belongsTo(JobBatchesRsp::class, 'job_batches_rsp_id');

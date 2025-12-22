@@ -8,6 +8,7 @@ use App\Models\Schedule;
 use App\Models\Submission;
 use Illuminate\Http\Request;
 use App\Models\JobBatchesRsp;
+use App\Models\SchedulesApplicant;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
@@ -15,7 +16,144 @@ use Illuminate\Support\Facades\Mail;
 
 class EmailController extends Controller
 {
-    //
+    // set shedules for the applicant wit sent an email
+    // public function sendEmailInterview(Request $request)
+    // {
+
+
+    //     $validated = $request->validate([
+    //         'applicants' => 'required|array',
+    //         'applicants.*.submission_id' => 'required|exists:submission,id',
+    //         'applicants.*.job_batches_rsp' => 'required|exists:job_batches_rsp,id',
+    //         'date_interview' => 'required|date',
+    //         'time_interview' => 'required|string',
+    //         'venue_interview' => 'required|string',
+    //         'batch_name' => 'required|string',
+    //     ]);
+
+    //     $date = Carbon::parse($validated['date_interview'])->format('F d, Y');
+    //     $time = Carbon::parse($validated['time_interview'])->format('g:i A'); // <-- changed
+
+    //     $venue = $validated['venue_interview'];
+    //     $batchName = $validated['batch_name'];
+
+    //     $count = 0;
+
+    //     foreach ($validated['applicants'] as $app) {
+
+    //         $submission = Submission::with('nPersonalInfo')->find($app['submission_id']);
+    //         if (!$submission) continue;
+
+    //         $job = JobBatchesRsp::find($app['job_batches_rsp']);
+    //         if (!$job) continue;
+
+    //         $position = $job->Position ?? 'the applied position';
+    //         $office = $job->Office ?? 'the corresponding office';
+    //         $SalaryGrade = $job->SalaryGrade ?? 'the corresponding SG';
+
+    //         // Get applicant info
+    //         if ($submission->nPersonalInfo_id) {
+    //             $firstname = $submission->nPersonalInfo->firstname;
+    //             $lastname  = $submission->nPersonalInfo->lastname;
+    //             $email     = $submission->nPersonalInfo->email_address ?? null;
+    //         } else if ($submission->ControlNo) {
+    //             $employee = DB::table('xPersonalAddt')
+    //                 ->join('xPersonal', 'xPersonalAddt.ControlNo', '=', 'xPersonal.ControlNo')
+    //                 ->where('xPersonalAddt.ControlNo', $submission->ControlNo)
+    //                 ->select('xPersonalAddt.*', 'xPersonal.Firstname', 'xPersonal.Surname', 'xPersonalAddt.EmailAdd')
+    //                 ->first();
+
+    //             if (!$employee) continue;
+
+    //             $firstname = $employee->Firstname;
+    //             $lastname = $employee->Surname;
+    //             $email = $employee->EmailAdd;
+    //         } else {
+    //             continue;
+    //         }
+
+    //         $fullname = trim("$firstname $lastname");
+    //         // if (!$email) continue;
+    //         if (!$email) {
+    //             Log::info("Skipping applicant {$submission->id}, email not found");
+    //             continue;
+    //         }
+    //         // DB::beginTransaction();
+
+    //         try {
+    //             Mail::to($email)->queue(new EmailApi(
+
+    //                 "Interview Invitation",
+    //                 'mail-template.interview',
+    //                 [
+    //                     'mailSubject' => "Interview Invitation",
+    //                     'fullname' => $fullname,
+    //                     'date' => $date,
+    //                     'time' => $time,
+    //                     'venue' => $venue,
+    //                     'position' => $position,
+    //                     'SalaryGrade' => $SalaryGrade,
+    //                     'office' => $office,
+    //                 ]
+    //             ));
+
+    //             $schedule = Schedule::create([
+    //                 // 'submission_id' => $submission->id,
+    //                 'batch_name' => $batchName,
+    //                 'date_interview' => $validated['date_interview'],
+    //                 'time_interview' => $time,
+    //                 'venue_interview' => $venue,
+    //             ]);
+
+    //             SchedulesApplicant::create([
+    //                 'schedule_id' => $schedule->id,
+    //                 'submission_id' => $submission->id,
+    //             ]);
+
+
+
+    //             $user = Auth::user();
+    //             if ($user instanceof \App\Models\User) {
+    //                 activity('Interview Invitation Sent')
+    //                     ->causedBy($user)
+    //                     ->performedOn($submission)
+    //                     ->withProperties([
+    //                         'name'     => $user->name,
+    //                         'username'       => $user->username,
+    //                         'applicant_name' => $fullname,
+    //                         'email'          => $email,
+    //                         'job_post_id'    => $job->id,
+    //                         'position'       => $position,
+    //                         'office'         => $office,
+    //                         'salary_grade'   => $SalaryGrade,
+    //                         'batch_name'     => $batchName,
+    //                         'date'           => $date,
+    //                         'time'           => $time,
+    //                         'venue'          => $venue,
+    //                         'ip'             => request()->ip(),
+    //                         'user_agent'     => request()->header('User-Agent'),
+
+    //                     ])
+    //                     ->log("{$user->name} sent an interview invitation to {$fullname} for the {$position} position in {$office}.");
+    //             }
+
+
+
+    //             // DB::commit();
+    //             $count++;
+    //         } catch (\Exception $e) {
+    //             DB::rollBack();
+    //             Log::error("❌ Failed to send email to {$fullname} ({$email}): {$e->getMessage()}");
+    //         }
+    //     }
+
+
+    //     return response()->json([
+    //         'success' => true,
+    //         'message' => "Interview invitations successfully sent to {$count} applicant(s).",
+    //     ]);
+    // }
+
     public function sendEmailInterview(Request $request)
     {
         $validated = $request->validate([
@@ -29,11 +167,21 @@ class EmailController extends Controller
         ]);
 
         $date = Carbon::parse($validated['date_interview'])->format('F d, Y');
-        $time = Carbon::parse($validated['time_interview'])->format('g:i A'); // <-- changed
+        $timeFormatted = Carbon::parse($validated['time_interview'])->format('g:i A');
+        $time = $validated['time_interview']; // store this in DB
+
         $venue = $validated['venue_interview'];
         $batchName = $validated['batch_name'];
 
         $count = 0;
+
+        /** ✅ CREATE ONE SCHEDULE ONLY */
+        $schedule = Schedule::create([
+            'batch_name' => $batchName,
+            'date_interview' => $validated['date_interview'],
+            'time_interview' => $time,
+            'venue_interview' => $venue,
+        ]);
 
         foreach ($validated['applicants'] as $app) {
 
@@ -69,64 +217,35 @@ class EmailController extends Controller
             }
 
             $fullname = trim("$firstname $lastname");
-            if (!$email) continue;
-
-            try {
-                Mail::to($email)->queue(new EmailApi(
-
-                    "Interview Invitation",
-                    'mail-template.interview',
-                    [
-                        'mailSubject' => "Interview Invitation",
-                        'fullname' => $fullname,
-                        'date' => $date,
-                        'time' => $time,
-                        'venue' => $venue,
-                        'position' => $position,
-                        'SalaryGrade' => $SalaryGrade,
-                        'office' => $office,
-                    ]
-                ));
-
-                Schedule::create([
-                    'submission_id' => $submission->id,
-                    'batch_name' => $batchName,
-                    'full_name' => $fullname,
-                    'date_interview' => $validated['date_interview'],
-                    'time_interview' => $time,
-                    'venue_interview' => $venue,
-                ]);
-
-                $user = Auth::user();
-                if ($user instanceof \App\Models\User) {
-                    activity('Interview Invitation Sent')
-                        ->causedBy($user)
-                        ->performedOn($submission)
-                        ->withProperties([
-                            'name'     => $user->name,
-                            'username'       => $user->username,
-                            'applicant_name' => $fullname,
-                            'email'          => $email,
-                            'job_post_id'    => $job->id,
-                            'position'       => $position,
-                            'office'         => $office,
-                            'salary_grade'   => $SalaryGrade,
-                            'batch_name'     => $batchName,
-                            'date'           => $date,
-                            'time'           => $time,
-                            'venue'          => $venue,
-                            'ip'             => request()->ip(),
-                            'user_agent'     => request()->header('User-Agent'),
-                            
-                        ])
-                        ->log("{$user->name} sent an interview invitation to {$fullname} for the {$position} position in {$office}.");
-                }
-
-
-                $count++;
-            } catch (\Exception $e) {
-                Log::error("❌ Failed to send email to {$fullname} ({$email}): {$e->getMessage()}");
+            // if (!$email) continue;
+            if (!$email) {
+                Log::info("Skipping applicant {$submission->id}, email not found");
+                continue;
             }
+
+            /** link applicant to schedule */
+            SchedulesApplicant::create([
+                'schedule_id' => $schedule->id,
+                'submission_id' => $submission->id,
+            ]);
+
+            /** send email */
+            Mail::to($email)->queue(new EmailApi(
+                "Interview Invitation",
+                'mail-template.interview',
+                [
+
+                'fullname' => $fullname,
+                  'date' => $date,
+                  'time' => $time,
+                   'venue' => $venue,
+                   'position' => $position,
+                  'SalaryGrade' => $SalaryGrade,
+                   'office' => $office,
+                ]
+            ));
+
+            $count++;
         }
 
         return response()->json([
@@ -134,7 +253,6 @@ class EmailController extends Controller
             'message' => "Interview invitations successfully sent to {$count} applicant(s).",
         ]);
     }
-
 
 
     public function sendEmailApplicantBatch(Request $request) // for the unqualified applicant that send an  the qualification and remarks

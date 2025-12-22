@@ -22,7 +22,7 @@ class ScheduleController extends Controller
             'xpersonal:ControlNo,Surname,Firstname',
             'job_batch_rsp:id,Position'
         ])->where('status','Qualified')
-            ->whereDoesntHave('schedules')
+            ->whereDoesntHave('scheduleApplicants')
             ->get()
             ->map(function ($item) {
 
@@ -58,45 +58,76 @@ class ScheduleController extends Controller
     }
 
 
-    public function fetchApplicantHaveSchedule()
+    public function fetchSchedule()
     {
-        $schedules = Schedule::select('batch_name', 'venue_interview', 'date_interview', 'time_interview')
+        $schedules = Schedule::withCount('scheduleApplicants')
             ->get()
-            ->groupBy(function ($item) {
-                return $item->batch_name . '|' . $item->venue_interview . '|' . $item->date_interview . '|' . $item->time_interview;
-            })
-            ->map(function ($group) {
-                $first = $group->first();
+            ->map(function ($schedule) {
                 return [
-                    'batch_name' => $first->batch_name,
-                    'venue_interview' => $first->venue_interview,
-                    'date_interview' => $first->date_interview,
-                    'time_interview' => $first->time_interview,
-                    'applicant_no' => $group->count(),
+                    'schedule_id'     => $schedule->id,
+                    'batch_name'      => $schedule->batch_name,
+                    'venue_interview' => $schedule->venue_interview,
+                    'date_interview'  => $schedule->date_interview,
+                    'time_interview'  => $schedule->time_interview,
+                    'applicant_no'    => $schedule->schedule_applicants_count,
                 ];
-            })
-            ->values();
+            });
 
         return response()->json($schedules);
     }
 
 
-    public function getApplicantInterview($date, $time)
+
+    // fetch applicant belong on the interview schedules
+    public function getApplicantInterview($scheduleId)
     {
-        $applicants = Schedule::with(['submission.job_batch_rsp'])
-            ->where('date_interview', $date)
-            ->where('time_interview', $time)
-            ->get()
-            ->map(function ($schedule) {
-                return [
-                    'batch_name'      => $schedule->batch_name,
-                    'venue_interview' => $schedule->venue_interview,
-                    'date_interview'  => $schedule->date_interview,
-                    'time_interview'  => $schedule->time_interview,
-                    'position'        => $schedule->submission->job_batch_rsp->Position ?? null,
-                    'applicant_name'  => $schedule->full_name,
-                ];
-            });
+        $schedule = Schedule::with([
+            'scheduleApplicants.submission.nPersonalInfo',
+            'scheduleApplicants.submission.xPersonal',
+            'scheduleApplicants.submission.job_batch_rsp',
+        ])->findOrFail($scheduleId);
+
+        $applicants = $schedule->scheduleApplicants->map(function ($sa) {
+
+            $submission = $sa->submission;
+            if (!$submission) {
+                return null;
+            }
+
+            $fullname  = null;
+            $cellphone = null;
+
+            // ✅ INTERNAL APPLICANT
+            if ($submission->nPersonalInfo) {
+                $fullname = trim(
+                    $submission->nPersonalInfo->firstname . ' ' .
+                        $submission->nPersonalInfo->lastname
+                );
+
+                $cellphone = $submission->nPersonalInfo->cellphone_number ?? null;
+            }
+
+            // ✅ EXTERNAL APPLICANT (fallback)
+            if (!$fullname && $submission->xPersonal) {
+                $fullname = trim(
+                    $submission->xPersonal->Firstname . ' ' .
+                        $submission->xPersonal->Surname
+                );
+            }
+
+            // ✅ EXTERNAL CONTACT (fallback)
+            if (!$cellphone && $submission->ControlNo) {
+                $cellphone = DB::table('xPersonalAddt')
+                    ->where('ControlNo', $submission->ControlNo)
+                    ->value('CellphoneNo');
+            }
+
+            return [
+                'applicant_name' => $fullname,
+                'contact_no'     => $cellphone,
+                'position'       => $submission->job_batch_rsp->Position ?? null,
+            ];
+        })->filter()->values();
 
         return response()->json($applicants);
     }

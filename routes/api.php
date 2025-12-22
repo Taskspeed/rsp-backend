@@ -38,6 +38,15 @@ use App\Http\Controllers\ApplicantSubmissionController;
 // Route::get('test/{controlNo}',[EmployeeController::class, 'findLastdata']);
 
 //
+
+Route::prefix('report')->group(function () {
+    Route::get('/job-post', [ReportController::class, 'getJobPost']);
+    Route::get('/job-post/{jobpostId}', [ReportController::class, 'getApplicantJobPost']);
+    Route::get('/applicant/{jobpostId}',[ReportController::class, 'getApplicantHaveSchedules']);
+
+    // Route::post('/send/status', [EmailController::class, 'sendEmailApplicantBatch']); // send an update of status applicant
+});
+
 Route::get('/generate', [ReportController::class, 'generatePlantilla']); // role of user
 
 
@@ -211,8 +220,8 @@ Route::middleware('auth:sanctum')->group(function () {
         // Route::post('/employee', [ApplicantSubmissionController::class, 'employee_applicant']); // for employyee applicant
         Route::get('/list', [ApplicantSubmissionController::class, 'listOfApplicants']); // for employyee applicant
         Route::get('/schedule', [ScheduleController::class, 'applicantList']); // list of the applicant external and internal
-        Route::get('/schedule/list', [ScheduleController::class, 'fetchApplicantHaveSchedule']); // list of schedule
-        Route::get('/schedule/details/{date}/{time}', [ScheduleController::class, 'getApplicantInterview']); // schedule of the applicant details
+        Route::get('/schedule/list', [ScheduleController::class, 'fetchSchedule']); // list of schedule
+        Route::get('/schedule/details/{scheduleId}', [ScheduleController::class, 'getApplicantInterview']); // schedule of the applicant details
         Route::post('/details', [ApplicantSubmissionController::class, 'getApplicantDetails']); //  fetch the applicant detail of jon post he apply
         // Route::delete('/read', [ApplicantSubmissionController::class, 'read_excel']);
         // Route::post('/image', [ApplicantSubmissionController::class, 'store_image']);
@@ -257,5 +266,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/send/interview', [EmailController::class, 'sendEmailInterview']); // send an interview schedule for applicant
         Route::post('/send/status', [EmailController::class, 'sendEmailApplicantBatch']); // send an update of status applicant
     });
+
+
+
 });
 

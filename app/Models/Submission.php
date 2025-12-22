@@ -59,6 +59,11 @@ class Submission extends Model
         return $this->belongsTo(xPersonal::class, 'ControlNo', 'ControlNo');
     }
 
+    public function xPersonalAddt() // external applicants
+    {
+        return $this->belongsTo(xPersonalAddt::class, 'ControlNo', 'ControlNo');
+    }
+
 
     public function jobPost()
     {
@@ -76,6 +81,10 @@ class Submission extends Model
         return $this->hasMany(Schedule::class, 'submission_id', 'id');
     }
 
+    public function scheduleApplicants()
+    {
+        return $this->hasMany(SchedulesApplicant::class, 'submission_id', 'id');
+    }
 
 
     // ✅ NEW: Get education records by IDs

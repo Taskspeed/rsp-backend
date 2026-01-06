@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\Storage;
 class JobBatchesRspController extends Controller
 {
 
-    public function unoccupied(Request $request, $JobPostingId)
+    public function unoccupied(Request $request, $JobPostingId) //  updating the status to Unoccupied
     {
         $validated = $request->validate([
             'status' => 'required|string|in:Unoccupied',
@@ -709,7 +709,7 @@ class JobBatchesRspController extends Controller
         ], 201);
     }
 
-    public function getApplicantPds($id)
+    public function getApplicantPds($id) // get pds of the applicant pds or qs
     {
         // 🔹 Fetch the submission by its ID
         $submission = Submission::find($id);
@@ -920,5 +920,56 @@ class JobBatchesRspController extends Controller
             'experience_images' => $experienceImages,
             'ranking' => $rating->ranking ?? null,
         ]);
+    }
+
+    // fetch the  jobpost with rated and occupied position
+    public function jobPostCompleteStatus()
+    {
+        $jobs = JobBatchesRsp::select('id as jobpostId', 'Office', 'Position','status', 'post_date', 'end_date')
+            ->whereIn('status', ['Republished', 'rated', 'Unoccupied'])
+            ->get();
+
+        return response()->json($jobs);
+    }
+
+    // fetch job post base on the  postdate
+    // public function jobPostPostDate()
+    // {
+    //     $dates = JobBatchesRsp::select('post_date as date')->whereIn('status', ['Republished', 'rated', 'Unoccupied'])
+    //         ->distinct()
+    //         ->orderBy('post_date', 'desc')
+    //         ->get();
+
+
+    //     $formattedDate = $dates->map(function ($item) {
+    //         return [
+    //             // 'date' => $item->date,
+    //             'date' => \Carbon\Carbon::parse($item->date)->format('M d, Y'),
+    //         ];
+    //     });
+
+    //     return response()->json(
+    //         $formattedDate
+    //     );
+    // }
+
+
+    // fetch job post based on the post date
+    public function jobPostPostDate()
+    {
+        $dates = JobBatchesRsp::select('post_date')
+            ->whereIn('status', ['Republished', 'rated', 'Unoccupied'])
+            ->distinct()
+            ->orderBy('post_date', 'desc')
+            ->get();
+
+        $formattedDate = $dates->map(function ($item) {
+            return [
+                // 'date'      => $item->post_date, // RAW date (for API logic)
+                'date' => Carbon::parse($item->post_date)->format('M d, Y'), // UI only
+            ];
+        });
+
+        return response()->json($formattedDate);
     }
 }

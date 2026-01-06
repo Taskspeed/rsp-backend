@@ -120,7 +120,7 @@ class ApplicantSubmissionController extends Controller
     }
 
 
-    public function employeeApplicant(Request $request)
+    public function employeeApplicant(Request $request) // employee applicant
     {
         // ✅ Validate request
         $validated = $request->validate([
@@ -263,8 +263,7 @@ class ApplicantSubmissionController extends Controller
     }
 
 
-
-    public function applicantStore(Request $request)
+    public function applicantStore(Request $request) // applicant send an applicant excel and zip file
     {
         $validated = $request->validate([
             'excel_file' => 'required|file|mimes:xlsx,xls,csv,xlsm',
@@ -597,9 +596,6 @@ class ApplicantSubmissionController extends Controller
 
         // ADD THIS: Parse References from Personal Declarations sheet
         $references = $this->parseReferences($declarationsSheet);
-
-
-
 
         return [
             'personal_info' => $personalInfo,
@@ -1754,28 +1750,28 @@ class ApplicantSubmissionController extends Controller
     }
 
     // Add this method to your controller for testing
-    public function testCache()
-    {
-        $testData = [
-            'children' => [
-                ['child_name' => 'Test Child', 'birth_date' => '2020-01-01']
-            ]
-        ];
+    // public function testCache()
+    // {
+    //     $testData = [
+    //         'children' => [
+    //             ['child_name' => 'Test Child', 'birth_date' => '2020-01-01']
+    //         ]
+    //     ];
 
-        Cache::put('test_key', $testData, now()->addMinutes(10));
-        $retrieved = Cache::get('test_key');
+    //     Cache::put('test_key', $testData, now()->addMinutes(10));
+    //     $retrieved = Cache::get('test_key');
 
-        Log::info('Cache Test', [
-            'original' => $testData,
-            'retrieved' => $retrieved,
-            'match' => $testData === $retrieved,
-            'cache_driver' => config('cache.default')
-        ]);
+    //     Log::info('Cache Test', [
+    //         'original' => $testData,
+    //         'retrieved' => $retrieved,
+    //         'match' => $testData === $retrieved,
+    //         'cache_driver' => config('cache.default')
+    //     ]);
 
-        return response()->json([
-            'original' => $testData,
-            'retrieved' => $retrieved,
-            'match' => $testData === $retrieved
-        ]);
-    }
+    //     return response()->json([
+    //         'original' => $testData,
+    //         'retrieved' => $retrieved,
+    //         'match' => $testData === $retrieved
+    //     ]);
+    // }
 }

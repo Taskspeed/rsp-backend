@@ -159,4 +159,9 @@ class JobBatchesRsp extends Model
     {
         return $this->hasOne(JobBatchesRsp::class, 'old_job_id');
     }
+
+    public function ratingScores()
+    {
+        return $this->hasMany(rating_score::class, 'job_batches_rsp_id', 'id');
+    }
 }

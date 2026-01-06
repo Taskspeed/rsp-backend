@@ -59,7 +59,7 @@ class RaterController extends Controller
         ]);
     }
 
-    public function showScores($jobpostId)
+    public function showScores($jobpostId) // fetch the score of the applicant
     {
         $jobpost = JobBatchesRsp::findOrFail($jobpostId);
 
@@ -147,13 +147,15 @@ class RaterController extends Controller
         ]);
     }
 
-    public function showApplicantHistory($applicantId)
+    public function showApplicantHistory($applicantId) // applicant rating score
     {
         // Fetch history for applicant (using nPersonalInfo_id or ControlNo fallback)
         $historyRecords = rating_score::select(
             'rating_score.id',
             'rating_score.user_id as rater_id',
-            'rating_score.rater_name',
+            // 'rating_score.rater_name',
+            'rater.name as rater_name',
+
             'rating_score.nPersonalInfo_id',
             'rating_score.ControlNo',
             'rating_score.education_score as education',
@@ -168,6 +170,7 @@ class RaterController extends Controller
             'nPersonalInfo.lastname',
             'nPersonalInfo.image_path'
         )
+            ->leftJoin('users as rater', 'rater.id', '=', 'rating_score.user_id')
             ->leftJoin('nPersonalInfo', 'nPersonalInfo.id', '=', 'rating_score.nPersonalInfo_id')
             ->where(function ($q) use ($applicantId) {
                 $q->where('rating_score.nPersonalInfo_id', $applicantId)
@@ -210,8 +213,6 @@ class RaterController extends Controller
             ])
         ]);
     }
-
-
 
     public function index()
     {

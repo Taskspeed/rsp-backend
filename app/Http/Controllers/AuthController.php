@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\Hash;
 class AuthController extends Controller
 
 {
-    public function get_role()
+    public function getRole()
     {
         $data = Role::all();
         return response()->json([
@@ -100,7 +100,7 @@ class AuthController extends Controller
 
 
     // Login
-    public function Token_Login(Request $request)
+    public function adminLogin(Request $request)
     {
         // First check if username and password are provided
         if (empty($request->username) || empty($request->password)) {
@@ -359,7 +359,7 @@ class AuthController extends Controller
                         'viewPlantillaAccess' => $request->input('permissions.viewPlantillaAccess', false),
                         'modifyPlantillaAccess' => $request->input('permissions.modifyPlantillaAccess', false),
                         'viewJobpostAccess' => $request->input('permissions.viewJobpostAccess', false),
-                        
+
                         'modifyJobpostAccess' => $request->input('permissions.modifyJobpostAccess', false),
                         'viewActivityLogs' => $request->input('permissions.viewActivityLogs', false),
                         'userManagement' => $request->input('permissions.userManagement', false),

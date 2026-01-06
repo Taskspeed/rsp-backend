@@ -23,7 +23,7 @@ class rating_score extends Model
         'ranking',
         'submitted',
         'ControlNo',
-        'rater_name'
+        // 'rater_name'
     ];
 
     // protected $casts = [
@@ -33,5 +33,10 @@ class rating_score extends Model
     public function applicant()
     {
         return $this->belongsTo(\App\Models\excel\nPersonal_info::class, 'nPersonalInfo_id', 'id');
+    }
+
+    public function jobPost()
+    {
+        return $this->belongsTo(\App\Models\JobBatchesRsp::class, 'job_batches_rsp_id', 'id');
     }
 }

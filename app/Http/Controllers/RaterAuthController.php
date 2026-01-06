@@ -163,7 +163,7 @@ class RaterAuthController extends Controller
 
 
     // login function for rater
-    public function Raters_Login(Request $request)
+    public function ratersLogin(Request $request)
     {
         // First check if username and password are provided
         if (empty($request->username) || empty($request->password)) {
@@ -236,6 +236,9 @@ class RaterAuthController extends Controller
 
         // Generate a token for the user
         // $token = $user->createToken('my-secret-token')->plainTextToken;
+
+        $user->tokens()->delete();
+
         $token = $user->createToken('rater_token')->plainTextToken;
         // Set the token in a secure cookie
         $cookie = cookie('rater_token', $token, 60 * 24, null, null, true, true, false, 'None');

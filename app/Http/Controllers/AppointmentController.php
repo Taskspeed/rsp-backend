@@ -117,6 +117,7 @@ class AppointmentController extends Controller
 
 
     }
+    
     // public function employee(Request $request)
     // {
     //     // Get page size (default 10)

@@ -17,9 +17,6 @@ use Illuminate\Support\Facades\Mail;
 class SubmissionController extends Controller
 {
 
-
-
-
     // deleting applicant on the job_post he/she applicant
     public function delete($id)
     {

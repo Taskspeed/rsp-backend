@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\JobBatchesRsp;
+use PHPUnit\Util\PHP\Job;
 use App\Models\Submission;
+use App\Models\rating_score;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
+use App\Models\JobBatchesRsp;
+use App\Services\RatingService;
 use PhpParser\Node\Expr\FuncCall;
+use Illuminate\Support\Facades\DB;
 
 class ReportController extends Controller
 {
@@ -445,13 +448,14 @@ class ReportController extends Controller
     public function getApplicantJobPost($jobpostId)
     {
         $jobs = Submission::where('job_batches_rsp_id', $jobpostId)
-            ->with('nPersonalInfo:id,firstname,lastname')
+            ->with(['nPersonalInfo:id,firstname,lastname',
+            'job_batch_rsp:id,Office,Position',
+            ])
             ->get()
             ->map(function ($item) {
                 return [
-                    'n_personal_info' => $item->nPersonalInfo,
-
-                    'id' => $item->id,
+                'n_personal_info' => $item->nPersonalInfo,
+                'submission_id' => $item->id,
                     // 'nPersonalInfo_id' => $item->nPersonalInfo_id,
                     // 'ControlNo' => $item->ControlNo,
                     // 'job_batches_rsp_id' => $item->job_batches_rsp_id,
@@ -462,9 +466,14 @@ class ReportController extends Controller
                     // 'total_qs' => $item->total_qs,
                     // 'grand_total' => $item->grand_total,
                     // 'ranking' => $item->ranking,
-                    'status' => $item->status,
-                    'submitted' => $item->submitted,
-                    // 'created_at' => $item->created_at,
+                'status' => $item->status,
+                    // 'submitted' => $item->submitted,
+                'apply_date' => $item->created_at ? $item->created_at->format('F d, Y') : null,
+                'office' => $item->job_batch_rsp->Office ?? null,
+                'position' => $item->job_batch_rsp->Position ?? null,
+
+
+
                     // 'updated_at' => $item->updated_at,
                     // 'education_qualification' => $item->education_qualification,
                     // 'experience_qualification' => $item->experience_qualification,
@@ -475,8 +484,6 @@ class ReportController extends Controller
 
         return response()->json($jobs);
     }
-
-
 
     // report job post with applicant have schedules
     public function getApplicantHaveSchedules($jobpostId)
@@ -498,5 +505,604 @@ class ReportController extends Controller
             });
 
         return response()->json($jobs);
+    }
+
+
+    // applicant final summary of rating qulification standard
+    public function applicantFinalScore($jobpostId)
+    {
+        $records = rating_score::select(
+            'rating_score.id',
+            'rating_score.user_id as rater_id',
+            // 'rating_score.rater_name',
+            'rater.name as rater_name',
+
+            'rater.position as rater_position',
+            'rating_score.nPersonalInfo_id',
+            'rating_score.ControlNo',
+            'rating_score.education_score as education',
+            'rating_score.experience_score as experience',
+            'rating_score.training_score as training',
+            'rating_score.performance_score as performance',
+            'rating_score.behavioral_score as bei',
+            'rating_score.total_qs',
+            'rating_score.grand_total',
+            'rating_score.ranking',
+            'nPersonalInfo.firstname',
+            'nPersonalInfo.lastname',
+            'nPersonalInfo.image_path',
+            'jobpost.id as job_batches_rsp_id',
+            'jobpost.Position',
+            'jobpost.Office',
+            'jobpost.SalaryGrade',
+            'jobpost.ItemNo'
+        )
+            ->leftJoin('users as rater', 'rater.id', '=', 'rating_score.user_id')
+            ->leftJoin('nPersonalInfo', 'nPersonalInfo.id', '=', 'rating_score.nPersonalInfo_id')
+            ->leftJoin('job_batches_rsp as jobpost', 'jobpost.id', '=', 'rating_score.job_batches_rsp_id')
+            ->where('rating_score.job_batches_rsp_id', $jobpostId)
+            ->get();
+
+        if ($records->isEmpty()) {
+            return response()->json(['message' => 'No applicant ratings found'], 404);
+        }
+
+        // Job post info (same for all)
+        $jobPost = [
+            'job_batches_rsp_id' => $jobpostId,
+            'Office'      => $records->first()->Office,
+            'Position'    => $records->first()->Position,
+            'SalaryGrade' => $records->first()->SalaryGrade,
+            'Plantilla Item No'      => $records->first()->ItemNo,
+        ];
+
+        // Group by applicant
+        $applicants = $records
+            ->groupBy('nPersonalInfo_id')
+            ->map(function ($rows) {
+                $first = $rows->first();
+
+                return [
+                    'applicant' => [
+                        'nPersonalInfo_id' => (string) $first->nPersonalInfo_id,
+                        'ControlNo'        => $first->ControlNo,
+                        'firstname'        => $first->firstname,
+                        'lastname'         => $first->lastname,
+                        'image_url'        => $first->image_path
+                            ? config('app.url') . '/storage/' . $first->image_path
+                            : null,
+                    ],
+                    'score' => $rows->map(fn($row) => [
+                        'id'          => $row->id,
+                        'rater_id'    => $row->rater_id,
+                        'rater_name'  => $row->rater_name,
+                        'rater_position'  => $row->rater_position,
+                        'education'   => $row->education,
+                        'experience'  => $row->experience,
+                        'training'    => $row->training,
+                        'performance' => $row->performance,
+                        'bei'         => $row->bei,
+                        'total_qs'    => $row->total_qs,
+                        'grand_total' => $row->grand_total,
+                        // 'ranking'     => $row->ranking,
+                    ])->values(),
+                ];
+            })
+            ->values();
+
+        return response()->json([
+            'jobPost'    => $jobPost,
+            'applicants' => $applicants,
+        ]);
+    }
+
+    // Palacement list
+    public function placementList($office)
+    {
+        $previousService = DB::table(DB::raw("
+        (
+            SELECT
+                ControlNo,
+                Designation,
+                Grades,
+                Renew,
+                FromDate,
+                ToDate,
+                ROW_NUMBER() OVER (
+                    PARTITION BY ControlNo
+                    ORDER BY FromDate DESC
+                ) AS rn
+            FROM xService
+        ) AS xs
+    "))
+            ->where('xs.rn', 2); // previous record
+
+        $officeData = DB::table('vwplantillaStructure as vps')
+            ->leftJoinSub($previousService, 'prev', function ($join) {
+                $join->on('prev.ControlNo', '=', 'vps.ControlNo');
+            })
+            ->where('vps.office', $office)
+            ->select(
+                'vps.office',
+                'vps.ItemNo',
+                'vps.position',
+                'vps.SG',
+                'vps.ControlNo',
+                'vps.Name4',
+
+                'prev.Designation as previous_designation',
+                'prev.Grades as previous_grade',
+                'prev.Renew as Nature of Movement',
+
+                // 'prev.FromDate as FromDate',
+                // 'prev.ToDate as ToDate'
+            )
+            ->orderByRaw('CAST(vps.ItemNo AS INT) ASC') // ✅ IMPORTANT
+            ->get();
+
+        return response()->json([
+            'office' => $officeData,
+        ]);
+    }
+
+    // top 5 ranking applicant date publication
+    public function topFiveApplicants($postDate)
+    {
+        $jobPosts = JobBatchesRsp::whereDate('post_date', $postDate)
+            ->select(
+                'id',
+                'Office',
+                'Division',
+                'Section',
+                'Position',
+                'SalaryGrade',
+                'ItemNo'
+            )
+            ->get();
+
+        $offices = [];
+
+        foreach ($jobPosts as $jobPost) {
+
+            // ===== Fetch rating scores per job post =====
+            $allScores = rating_score::select(
+                'rating_score.id',
+                'rating_score.nPersonalInfo_id',
+                'rating_score.ControlNo',
+                'rating_score.job_batches_rsp_id',
+                'rating_score.education_score as education',
+                'rating_score.experience_score as experience',
+                'rating_score.training_score as training',
+                'rating_score.performance_score as performance',
+                'rating_score.behavioral_score as bei',
+                'nPersonalInfo.firstname',
+                'nPersonalInfo.lastname'
+            )
+                ->leftJoin('nPersonalInfo', 'nPersonalInfo.id', '=', 'rating_score.nPersonalInfo_id')
+                ->where('rating_score.job_batches_rsp_id', $jobPost->id)
+                ->get();
+
+            // ===== Group by applicant =====
+            $scoresByApplicant = $allScores->groupBy(
+                fn($row) => $row->nPersonalInfo_id ?: 'control_' . $row->ControlNo
+            );
+
+            $applicants = [];
+
+            foreach ($scoresByApplicant as $rows) {
+                $first = $rows->first();
+
+                $scoresArray = $rows->map(fn($row) => [
+                    'education'   => (float) $row->education,
+                    'experience'  => (float) $row->experience,
+                    'training'    => (float) $row->training,
+                    'performance' => (float) $row->performance,
+                    'bei'         => (float) $row->bei,
+                ])->toArray();
+
+                $computed = RatingService::computeFinalScore($scoresArray);
+
+                $applicants[] = [
+                    'nPersonalInfo_id' => $first->nPersonalInfo_id,
+                    'ControlNo'        => $first->ControlNo,
+                    'firstname'        => $first->firstname,
+                    'lastname'         => $first->lastname,
+                ] + $computed;
+            }
+
+            // ===== Top 5 applicants =====
+            $topApplicants = collect(
+                RatingService::addRanking($applicants)
+            )
+                ->sortBy('ranking')
+                ->take(5)
+                ->values();
+
+            // ===== Group by OFFICE =====
+            if (!isset($offices[$jobPost->Office])) {
+                $offices[$jobPost->Office] = [
+                    'office' => $jobPost->Office,
+                    'job_posts' => []
+                ];
+            }
+
+            $offices[$jobPost->Office]['job_posts'][] = [
+                'Division'       => $jobPost->Division,
+                'Position'       => $jobPost->Position,
+                'Salary Grade'   => $jobPost->SalaryGrade,
+                'Plantilla Item No'        => $jobPost->ItemNo,
+                'Top 5 Applicant' => $topApplicants
+            ];
+        }
+
+        return response()->json([
+            'Header'   => 'Top 5 Ranking Applicants',
+            'Date' => "$postDate Publication",
+            'Offices'   => array_values($offices)
+        ]);
+    }
+
+
+    // public function topFiveApplicants($postDate)
+    // {
+    //     // 1️⃣ Get ALL job posts for the given date
+    //     $jobPosts = JobBatchesRsp::whereDate('post_date', $postDate)
+    //         ->select(
+    //             'id',
+    //             'Office',
+    //             'Division',
+    //             'Position',
+    //             'SalaryGrade',
+    //             'ItemNo'
+    //         )
+    //         ->get();
+
+    //     $result = [];
+
+    //     // 2️⃣ Loop each job post
+    //     foreach ($jobPosts as $jobPost) {
+
+    //         // 3️⃣ Get ALL rating scores for this job post
+    //         $allScores = rating_score::select(
+    //             'rating_score.id',
+    //             'rating_score.user_id as rater_id',
+    //             'users.name as rater_name',
+    //             'rating_score.nPersonalInfo_id',
+    //             'rating_score.ControlNo',
+    //             'rating_score.job_batches_rsp_id',
+    //             'rating_score.education_score as education',
+    //             'rating_score.experience_score as experience',
+    //             'rating_score.training_score as training',
+    //             'rating_score.performance_score as performance',
+    //             'rating_score.behavioral_score as bei',
+    //             'rating_score.total_qs',
+    //             'rating_score.grand_total',
+    //             'rating_score.ranking',
+    //             'nPersonalInfo.firstname',
+    //             'nPersonalInfo.lastname',
+    //             'nPersonalInfo.image_path'
+    //         )
+    //             ->leftJoin('nPersonalInfo', 'nPersonalInfo.id', '=', 'rating_score.nPersonalInfo_id')
+    //             ->leftJoin('users', 'users.id', '=', 'rating_score.user_id')
+    //             ->where('rating_score.job_batches_rsp_id', $jobPost->id)
+    //             ->get();
+
+    //         // 4️⃣ Group scores per applicant
+    //         $scoresByApplicant = $allScores->groupBy(
+    //             fn($row) => $row->nPersonalInfo_id ?: 'control_' . $row->ControlNo
+    //         );
+
+    //         $applicants = [];
+
+    //         foreach ($scoresByApplicant as $applicantKey => $rows) {
+    //             $first = $rows->first();
+
+    //             $scoresArray = $rows->map(fn($row) => [
+    //                 'education'   => (float) $row->education,
+    //                 'experience'  => (float) $row->experience,
+    //                 'training'    => (float) $row->training,
+    //                 'performance' => (float) $row->performance,
+    //                 'bei'         => (float) $row->bei,
+    //             ])->toArray();
+
+    //             $computed = RatingService::computeFinalScore($scoresArray);
+
+    //             $applicants[] = [
+    //                 'nPersonalInfo_id' => $first->nPersonalInfo_id,
+    //                 'ControlNo'        => $first->ControlNo,
+    //                 'firstname'        => $first->firstname,
+    //                 'lastname'         => $first->lastname,
+    //             ] + $computed;
+    //         }
+
+    //         // 5️⃣ Rank applicants & get TOP 5
+    //         $rankedApplicants = collect(
+    //             RatingService::addRanking($applicants)
+    //         )
+    //             ->sortBy('ranking')
+    //             ->take(5)
+    //             ->values();
+
+    //         // 6️⃣ Push final job post result
+    //         $result[] = [
+    //             'office'        => $jobPost->Office,
+    //             'division'      => $jobPost->Division,
+    //             'position'      => $jobPost->Position,
+    //             'salary_grade'  => $jobPost->SalaryGrade,
+    //             'item_no'       => $jobPost->ItemNo,
+    //             'top_applicants' => $rankedApplicants,
+    //         ];
+    //     }
+
+    //     return response()->json([
+    //         'post_date' => $postDate,
+    //         'job_posts' => $result
+    //     ]);
+    // }
+
+    // Palacement list iwth same position level
+    // public function placementList($office)
+    // {
+    //     $serviceRanks = DB::table(DB::raw("
+    //     (
+    //         SELECT
+    //             ControlNo,
+    //             Designation,
+    //             Grades,
+    //             Renew,
+    //             FromDate,
+    //             ToDate,
+    //             ROW_NUMBER() OVER (
+    //                 PARTITION BY ControlNo
+    //                 ORDER BY FromDate DESC
+    //             ) AS rn
+    //         FROM xService
+    //     ) AS xs
+    // "));
+
+    //     $officeData = DB::table('vwplantillaStructure as vps')
+    //         ->leftJoinSub(
+    //             $serviceRanks->clone()->where('rn', 1),
+    //             'curr',
+    //             fn($join) => $join->on('curr.ControlNo', '=', 'vps.ControlNo')
+    //         )
+    //         ->leftJoinSub(
+    //             $serviceRanks->clone()->where('rn', 2),
+    //             'prev',
+    //             fn($join) => $join->on('prev.ControlNo', '=', 'vps.ControlNo')
+    //         )
+    //         ->where('vps.office', $office)
+    //         ->select(
+    //             'vps.office',
+    //             'vps.position',
+    //             'vps.ControlNo',
+    //             'vps.SG',
+    //             'vps.Name4',
+    //             'vps.ItemNo',
+
+    //             'prev.Designation as previous_designation',
+    //             'prev.Grades as previous_grade',
+    //             // 'prev.FromDate as previous_from',
+    //             // 'prev.ToDate as previous_to',
+
+    //             // 'curr.Designation as current_designation',
+    //             // 'curr.Grades as current_grade',
+
+    //             DB::raw("
+    //             CASE
+    //                 WHEN
+    //                     prev.Designation = curr.Designation
+
+    //                 THEN 'Same position level'
+    //                 ELSE curr.Renew
+    //             END AS nature_of_movement
+    //         ")
+    //         )
+    //         ->get();
+
+    //     return response()->json([
+    //         'office' => $officeData,
+    //     ]);
+    // }
+
+    // list of qualified applicants  for job post publication
+    public function listQualifiedApplicantsPublication($postDate)
+    {
+        $jobPosts = JobBatchesRsp::whereDate('post_date', $postDate)
+            ->select('id', 'Position', 'ItemNo')
+            ->with([
+                'criteria:id,job_batches_rsp_id,Education,Experience,Training,Eligibility',
+                'submissions' => function ($query) {
+                    $query->select(
+                        'id',
+                        'job_batches_rsp_id',
+                        'nPersonalInfo_id',
+                        'ControlNo',
+                        'status'
+                    )
+                        ->where('status', 'Qualified')
+                        ->with([
+                            'nPersonalInfo:id,firstname,lastname',
+                            'nPersonalInfo.education',
+                            'nPersonalInfo.work_experience',
+                            'nPersonalInfo.training',
+                            'nPersonalInfo.eligibity',
+                        ]);
+                }
+            ])
+            ->get();
+
+        $responseJobs = [];
+
+        foreach ($jobPosts as $job) {
+
+            $applicants = [];
+
+            foreach ($job->submissions as $submission) {
+
+                // ✅ INTERNAL / OUTSIDER
+                if ($submission->nPersonalInfo) {
+                    $applicants[] = [
+                        'firstname' => $submission->nPersonalInfo->firstname,
+                        'lastname'  => $submission->nPersonalInfo->lastname,
+                        'current_designation' => null,
+                        'office' => null,
+                        'status' => $submission->status,
+                        'applicant_status' => 'OUTSIDER',
+                        'education' => $submission->nPersonalInfo->education,
+                        'training' => $submission->nPersonalInfo->training,
+                        'eligibity' => $submission->nPersonalInfo->eligibity,
+                        'work_experience' => $submission->nPersonalInfo->work_experience,
+                    ];
+                }
+
+                // ✅ EXTERNAL
+                elseif ($submission->ControlNo) {
+
+                    $tempReorg = DB::table('tempRegAppointmentReorg')
+                        ->where('ControlNo', $submission->ControlNo)
+                        ->select('Office', 'Designation')
+                        ->first();
+
+                    $xPDS = new \App\Http\Controllers\xPDSController();
+                    $employeeData = $xPDS->getPersonalDataSheet(
+                        new \Illuminate\Http\Request([
+                            'controlno' => $submission->ControlNo
+                        ])
+                    );
+                    $employeeJson = $employeeData->getData(true);
+
+                    $applicants[] = [
+                        'controlno' => $submission->ControlNo,
+                        'firstname' => $employeeJson['User'][0]['Firstname'] ?? '',
+                        'lastname'  => $employeeJson['User'][0]['Surname'] ?? '',
+                        'current_designation' => $tempReorg->Designation ?? null,
+                        'office' => $tempReorg->Office ?? null,
+                        'status' => $submission->status,
+                        'applicant_status' => 'EXTERNAL',
+                        'education' => $employeeJson['Education'] ?? [],
+                        'training' => $employeeJson['Training'] ?? [],
+                        'eligibity' => $employeeJson['Eligibility'] ?? [],
+                        'work_experience' => $employeeJson['Experience'] ?? [],
+                    ];
+                }
+            }
+
+            // ✅ BUILD FINAL JOB OBJECT (ORDER GUARANTEED)
+            $responseJobs[] = [
+                'id' => $job->id,
+                'Position' => $job->Position,
+                'ItemNo' => $job->ItemNo,
+                'criteria' => $job->criteria,
+                'applicants' => $applicants
+            ];
+        }
+
+        return response()->json([
+            'Header' => 'Applicants Qualified Standard',
+            'Date' => "$postDate Publication",
+            'jobPosts' => $responseJobs
+        ]);
+    }
+
+
+    // list of Unqualified applicants  for job post publication
+    public function listUnQualifiedApplicantsPublication($postDate)
+    {
+        $jobPosts = JobBatchesRsp::whereDate('post_date', $postDate)
+            ->select('id', 'Position', 'ItemNo')
+            ->with([
+                'criteria:id,job_batches_rsp_id,Education,Experience,Training,Eligibility',
+                'submissions' => function ($query) {
+                    $query->select(
+                        'id',
+                        'job_batches_rsp_id',
+                        'nPersonalInfo_id',
+                        'ControlNo',
+                        'status'
+                    )
+                        ->where('status', 'Unqualified')
+                        ->with([
+                            'nPersonalInfo:id,firstname,lastname',
+                            'nPersonalInfo.education',
+                            'nPersonalInfo.work_experience',
+                            'nPersonalInfo.training',
+                            'nPersonalInfo.eligibity',
+                        ]);
+                }
+            ])
+            ->get();
+
+        $responseJobs = [];
+
+        foreach ($jobPosts as $job) {
+
+            $applicants = [];
+
+            foreach ($job->submissions as $submission) {
+
+                // ✅ INTERNAL / OUTSIDER
+                if ($submission->nPersonalInfo) {
+                    $applicants[] = [
+                        'firstname' => $submission->nPersonalInfo->firstname,
+                        'lastname'  => $submission->nPersonalInfo->lastname,
+                        'current_designation' => null,
+                        'office' => null,
+                        'status' => $submission->status,
+                        'applicant_status' => 'OUTSIDER',
+                        'education' => $submission->nPersonalInfo->education,
+                        'training' => $submission->nPersonalInfo->training,
+                        'eligibity' => $submission->nPersonalInfo->eligibity,
+                        'work_experience' => $submission->nPersonalInfo->work_experience,
+                    ];
+                }
+
+                // ✅ EXTERNAL
+                elseif ($submission->ControlNo) {
+
+                    $tempReorg = DB::table('tempRegAppointmentReorg')
+                        ->where('ControlNo', $submission->ControlNo)
+                        ->select('Office', 'Designation')
+                        ->first();
+
+                    $xPDS = new \App\Http\Controllers\xPDSController();
+                    $employeeData = $xPDS->getPersonalDataSheet(
+                        new \Illuminate\Http\Request([
+                            'controlno' => $submission->ControlNo
+                        ])
+                    );
+                    $employeeJson = $employeeData->getData(true);
+
+                    $applicants[] = [
+                        'controlno' => $submission->ControlNo,
+                        'firstname' => $employeeJson['User'][0]['Firstname'] ?? '',
+                        'lastname'  => $employeeJson['User'][0]['Surname'] ?? '',
+                        'current_designation' => $tempReorg->Designation ?? null,
+                        'office' => $tempReorg->Office ?? null,
+                        'status' => $submission->status,
+                        'applicant_status' => 'EXTERNAL',
+                        'education' => $employeeJson['Education'] ?? [],
+                        'training' => $employeeJson['Training'] ?? [],
+                        'eligibity' => $employeeJson['Eligibility'] ?? [],
+                        'work_experience' => $employeeJson['Experience'] ?? [],
+                    ];
+                }
+            }
+
+            // ✅ BUILD FINAL JOB OBJECT (ORDER GUARANTEED)
+            $responseJobs[] = [
+                'id' => $job->id,
+                'Position' => $job->Position,
+                'ItemNo' => $job->ItemNo,
+                'criteria' => $job->criteria,
+                'applicants' => $applicants
+            ];
+        }
+
+        return response()->json([
+            'Header' => 'Applicants Qualified Standard',
+            'Date' => "$postDate Publication",
+            'jobPosts' => $responseJobs
+        ]);
     }
 }

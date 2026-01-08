@@ -21,7 +21,8 @@ class Education_background extends Model
         'highest_units',
         'year_graduated',
         'scholarship',
-        'level'
+        'level',
+        'graduated'
 
     ];
 

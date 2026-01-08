@@ -11,10 +11,10 @@ return new class extends Migration
         Schema::table('schedules', function (Blueprint $table) {
 
             // 1️⃣ drop foreign key first
-            $table->dropForeign(['submission_id']);
+            $table->dropForeign(['submission_id'])->nullable();
 
             // 2️⃣ then drop column
-            $table->dropColumn('submission_id');
+            $table->dropColumn('submission_id')->nullable();;
         });
     }
 
@@ -25,7 +25,7 @@ return new class extends Migration
             // restore column
             $table->foreignId('submission_id')
                 ->constrained('submission')
-                ->onDelete('cascade');
+                ->onDelete('cascade')->nullable();;
         });
     }
 };

@@ -11,9 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('schedule', function (Blueprint $table) {
-            $table->id();
-            $table->timestamps();
+        Schema::table('nEducation', function (Blueprint $table) {
+            //
+
+            $table->string('graduated')->nullable()->after('level');
         });
     }
 
@@ -22,6 +23,10 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('schedule');
+        Schema::table('nEducation', function (Blueprint $table) {
+            //
+
+            $table->dropColumn('graduated');
+        });
     }
 };

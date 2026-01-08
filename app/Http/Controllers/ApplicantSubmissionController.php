@@ -22,6 +22,7 @@ use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpSpreadsheet\Reader\Xlsx;
+use PhpOffice\PhpSpreadsheet\Shared\Date;
 
 class ApplicantSubmissionController extends Controller
 {
@@ -807,10 +808,13 @@ class ApplicantSubmissionController extends Controller
                 'level' => $level,
                 'school_name' => $schoolName,
                 'degree' => $sheet->getCell("C{$rowIndex}")->getValue(),
-                'attendance_from' => $this->parseExcelDate($sheet->getCell("D{$rowIndex}")->getValue()),
-                'attendance_to' => $this->parseExcelDate($sheet->getCell("E{$rowIndex}")->getValue()),
+                // 'attendance_from' => $this->parseExcelDate($sheet->getCell("D{$rowIndex}")->getValue()),
+                // 'attendance_to' => $this->parseExcelDate($sheet->getCell("E{$rowIndex}")->getValue()),
+                'attendance_from' => $sheet->getCell("D{$rowIndex}")->getValue(),
+                'attendance_to' => $sheet->getCell("E{$rowIndex}")->getValue(),
                 'highest_units' => $this->sanitizeNumericValue($sheet->getCell("F{$rowIndex}")->getValue()),
-                'year_graduated' => $this->sanitizeNumericValue($sheet->getCell("G{$rowIndex}")->getValue()),
+                // 'year_graduated' => $this->sanitizeNumericValue($sheet->getCell("G{$rowIndex}")->getValue()),
+                'graduated' => $sheet->getCell("G{$rowIndex}")->getValue(),
                 'scholarship' => $sheet->getCell("H{$rowIndex}")->getValue(),
             ];
         }
@@ -1231,22 +1235,43 @@ class ApplicantSubmissionController extends Controller
     /**
      * Helper: Parse Excel date
      */
+    // private function parseExcelDate($value)
+    // {
+    //     if (empty($value)) {
+    //         return null;
+    //     }
+
+    //     try {
+    //         if (is_numeric($value)) {
+    //             return \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($value)->format('Y-m-d');
+    //         } else {
+    //             return \Carbon\Carbon::parse($value)->format('Y-m-d');
+    //         }
+    //     } catch (\Exception $e) {
+    //         return null;
+    //     }
+    // }
     private function parseExcelDate($value)
     {
-        if (empty($value)) {
+        if ($value === null || $value === '') {
             return null;
         }
 
         try {
+            // Excel numeric date
             if (is_numeric($value)) {
-                return \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($value)->format('Y-m-d');
-            } else {
-                return \Carbon\Carbon::parse($value)->format('Y-m-d');
+                return Date::excelToDateTimeObject($value)
+                    ->format('m/d/Y'); // MM/DD/YYYY
             }
+
+            // Force MM/DD/YYYY (no guessing)
+            return Carbon::createFromFormat('m/d/Y', trim($value))
+                ->format('m/d/Y');
         } catch (\Exception $e) {
-            return null;
+            // dd('DATE ERROR:', $value); // 👈 TEMP DEBUG
         }
     }
+
 
     /**
      * Helper: Determine citizenship status

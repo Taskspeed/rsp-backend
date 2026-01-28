@@ -292,7 +292,7 @@ class AuthController extends Controller
                 'name' => 'required|string|max:255',
                 'position' => 'required|string|max:255',
                 'active' => 'required|boolean',
-                'permissions.viewDashboardstat' => 'boolean',
+                'permissions.viewDashboardstat' => 'required|boolean',
                 'permissions.viewPlantillaAccess' => 'boolean',
                 'permissions.modifyPlantillaAccess' => 'boolean',
                 'permissions.viewJobpostAccess' => 'boolean',

@@ -48,14 +48,16 @@ Route::prefix('report')->group(function () {
     Route::get('/dbm', [ReportController::class, 'dbmReport']); // generate the plantilla report
 
     // Route::get('/applicant/{jobpostId}',[ReportController::class, 'getApplicantHaveSchedules']);
-
     // Route::post('/send/status', [EmailController::class, 'sendEmailApplicantBatch']); // send an update of status applicant
 
-
 });
-Route::get('/generate', [ReportController::class, 'generatePlantilla']); // generate the plantilla report
+
+
+Route::get('/generate', [ReportController::class, 'generatePlantilla']);
 Route::post('/generate/cancel/{jobId}', [ReportController::class, 'cancelPlantilla']);
 Route::get('/generate/status/{jobId}', [ReportController::class, 'checkPlantillaStatus']);
+
+// user
 Route::post('/verify-code', [VerificationController::class, 'verifyCode']); // verify the code
 Route::post('/send-verification', [VerificationController::class, 'sendVerification']); // sending code on email
 

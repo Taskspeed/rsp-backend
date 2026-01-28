@@ -3,13 +3,14 @@
 namespace App\Jobs;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Bus\Dispatchable;
-use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Queue\SerializesModels;
+use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Foundation\Bus\Dispatchable;
+
 
 class GeneratePlantillaReportJob implements ShouldQueue
 {
@@ -24,12 +25,54 @@ class GeneratePlantillaReportJob implements ShouldQueue
         $this->jobId = $jobId;
     }
 
+
+    // public function handle()
+    // {
+    //     try {
+    //          // ✅ Check if job was cancelled before starting
+    //         if ($this->isCancelled()) {
+    //             Log::info("Job {$this->jobId} was cancelled before execution");
+    //             return;
+    //         }
+
+
+    //         $this->updateProgress(5, 'Starting report generation...');
+
+    //         $result = $this->generateReport();
+
+    //         // ✅ Check again before saving result
+    //         if ($this->isCancelled()) {
+    //             Log::info("Job {$this->jobId} was cancelled during execution");
+    //             return;
+    //         }
+
+    //         $this->updateProgress(95, 'Finalizing report...');
+
+    //         Cache::put("plantilla_job_{$this->jobId}", [
+    //             'status' => 'completed',
+    //             'progress' => 100,
+    //             'message' => 'Report generated successfully',
+    //             'data' => $result
+    //         ], 600);
+    //     } catch (\Exception $e) {
+    //         Log::error('Plantilla generation failed: ' . $e->getMessage());
+
+    //         Cache::put("plantilla_job_{$this->jobId}", [
+    //             'status' => 'failed',
+    //             'progress' => 0,
+    //             'error' => $e->getMessage()
+    //         ], 600);
+    //     }
+    // }
+
+
     public function handle()
     {
         try {
             // ✅ Check if job was cancelled before starting
             if ($this->isCancelled()) {
                 Log::info("Job {$this->jobId} was cancelled before execution");
+                $this->fail(new \Exception('Job was cancelled by user'));
                 return;
             }
 
@@ -40,6 +83,7 @@ class GeneratePlantillaReportJob implements ShouldQueue
             // ✅ Check again before saving result
             if ($this->isCancelled()) {
                 Log::info("Job {$this->jobId} was cancelled during execution");
+                $this->fail(new \Exception('Job was cancelled by user'));
                 return;
             }
 
@@ -59,8 +103,12 @@ class GeneratePlantillaReportJob implements ShouldQueue
                 'progress' => 0,
                 'error' => $e->getMessage()
             ], 600);
+
+            // Re-throw to mark job as failed in queue
+            throw $e;
         }
     }
+
 
     private function isCancelled()
     {
@@ -82,11 +130,21 @@ class GeneratePlantillaReportJob implements ShouldQueue
         // Step 1: Fetch main data (20% progress)
         $this->updateProgress(10, 'Fetching employee data...');
 
+        // Check for cancellation
+        if ($this->isCancelled()) {
+            throw new \Exception('Job was cancelled by user');
+        }
+
         $latestXService = DB::table('xService')
             ->select('ControlNo', DB::raw('MAX(PMID) as latest_pmid'))
             ->groupBy('ControlNo');
 
         $this->updateProgress(20, 'Processing plantilla structure...');
+
+        // Check for cancellation before heavy query
+        if ($this->isCancelled()) {
+            throw new \Exception('Job was cancelled by user');
+        }
 
         $rows = DB::table('vwplantillastructure as p')
             ->leftJoin('vwActive as a', 'a.ControlNo', '=', 'p.ControlNo')
@@ -123,6 +181,10 @@ class GeneratePlantillaReportJob implements ShouldQueue
 
         // Step 2: Fetch service records (30% progress)
         $this->updateProgress(30, 'Fetching service records...');
+        // Check for cancellation before heavy query
+        if ($this->isCancelled()) {
+            throw new \Exception('Job was cancelled by user');
+        }
 
         $allControlNos = $rows->pluck('ControlNo')->filter()->unique()->values();
 
@@ -144,8 +206,9 @@ class GeneratePlantillaReportJob implements ShouldQueue
         foreach ($officeGroups as $officeName => $officeRows) {
             // Check for cancellation during processing
             if ($this->isCancelled()) {
-                return [];
+                throw new \Exception('Job was cancelled by user');
             }
+
 
             $officeSort = $officeRows->first()->office_sort;
             $officeLevel = $officeRows->first()->level;

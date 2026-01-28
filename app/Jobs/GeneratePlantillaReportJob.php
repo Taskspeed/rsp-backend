@@ -69,6 +69,9 @@ class GeneratePlantillaReportJob implements ShouldQueue
     public function handle()
     {
         try {
+            // Cache::put('queue_worker_heartbeat', now()->toDateTimeString(), 180); // 3 minutes TTL
+
+            // Cache::put('queue_worker_heartbeat', now(), 120);
             // ✅ Check if job was cancelled before starting
             if ($this->isCancelled()) {
                 Log::info("Job {$this->jobId} was cancelled before execution");
@@ -127,6 +130,9 @@ class GeneratePlantillaReportJob implements ShouldQueue
 
     private function generateReport()
     {
+
+
+
         // Step 1: Fetch main data (20% progress)
         $this->updateProgress(10, 'Fetching employee data...');
 
@@ -505,4 +511,6 @@ class GeneratePlantillaReportJob implements ShouldQueue
             'dateLastPromotion'     => $dateLastPromotion ?? null,
         ];
     }
+
+
 }

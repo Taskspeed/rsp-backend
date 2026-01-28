@@ -10,11 +10,13 @@ use App\Models\rating_score;
 use Illuminate\Http\Request;
 use App\Models\JobBatchesRsp;
 use App\Services\RatingService;
+use App\Jobs\QueueWorkerTestJob;
 use PhpParser\Node\Expr\FuncCall;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Jobs\GeneratePlantillaReport;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Queue;
 use App\Jobs\GeneratePlantillaReportJob;
 
 class ReportController extends Controller
@@ -434,6 +436,16 @@ class ReportController extends Controller
 
        public function generatePlantilla(Request $request)
     {
+
+        // ✅ Check if queue worker is running BEFORE dispatching
+        if (!$this->isQueueWorkerRunning()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Queue worker is not running. Please contact Deniel Tomenio for this issue.'
+            ], 503);
+        }
+
+
         $jobId = Str::uuid()->toString();
 
         // Initialize job status
@@ -521,6 +533,58 @@ class ReportController extends Controller
             });
 
         return response()->json($jobs);
+    }
+
+    private function isQueueWorkerRunning()
+    {
+        try {
+            // Method 1: Check if we can connect to queue
+            $connection = config('queue.default');
+            $queueName = config("queue.connections.{$connection}.queue", 'default');
+
+            // Try to get queue size (this will fail if Redis/database is not available)
+            Queue::size($queueName);
+
+            // Method 2: Check for active workers by trying to dispatch a test
+            // This is optional but more reliable
+            return $this->checkForActiveWorkers();
+        } catch (\Exception $e) {
+            Log::error('Queue check failed: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Check if there are active queue workers by looking at recent job processing
+     */
+    private function checkForActiveWorkers()
+    {
+        // Create a test marker
+        $testKey = 'queue_worker_test_' . now()->timestamp;
+        Cache::put($testKey, 'waiting', 10); // 10 seconds TTL
+
+        // Dispatch a test job
+        QueueWorkerTestJob::dispatch($testKey);
+
+        // Wait a moment and check if job was processed
+        sleep(2);
+
+        $result = Cache::get($testKey);
+
+        // If the test job ran, it would have changed this value
+        return $result === 'processed';
+    }
+
+    public function checkQueueWorkerStatus()
+    {
+        $isRunning = $this->isQueueWorkerRunning();
+
+        return response()->json([
+            'is_running' => $isRunning,
+            'message' => $isRunning
+                ? 'Queue worker is running'
+                : 'Queue worker is not running'
+        ]);
     }
 
     // report job post with applicant have schedules

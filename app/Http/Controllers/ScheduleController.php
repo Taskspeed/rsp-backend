@@ -20,7 +20,7 @@ class ScheduleController extends Controller
         $applicants = Submission::with([
             'nPersonalInfo:id,firstname,lastname',
             'xpersonal:ControlNo,Surname,Firstname',
-            'job_batch_rsp:id,Position'
+            'job_batch_rsp:id,Position,Office'
         ])->where('status','Qualified')
             ->whereDoesntHave('scheduleApplicants')
             ->get()
@@ -49,6 +49,7 @@ class ScheduleController extends Controller
 
                     "job_batch_rsp"         => [
                         "job_batches_rsp_id" => $item->job_batch_rsp->id ?? null,
+                        "Office"           => $item->job_batch_rsp->Office ?? null,
                         "Position"           => $item->job_batch_rsp->Position ?? null,
                     ],
                 ];

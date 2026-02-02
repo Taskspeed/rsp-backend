@@ -59,24 +59,56 @@ class ScheduleController extends Controller
     }
 
 
-    public function fetchSchedule() // list of interview schedule with applicant count
+    // public function fetchSchedule() // list of interview schedule with applicant count
+    // {
+    //     $schedules = Schedule::withCount('scheduleApplicants')
+    //         ->get()
+    //         ->map(function ($schedule) {
+    //             return [
+    //                 'schedule_id'     => $schedule->id,
+    //                 'batch_name'      => $schedule->batch_name,
+    //                 'venue_interview' => $schedule->venue_interview,
+    //                 'date_interview'  => $schedule->date_interview,
+    //                 'time_interview'  => $schedule->time_interview,
+    //                 'applicant_no'    => $schedule->schedule_applicants_count,
+    //             ];
+    //         });
+
+    //     return response()->json($schedules);
+    // }
+
+    public function fetchSchedule(Request $request)
     {
-        $schedules = Schedule::withCount('scheduleApplicants')
-            ->get()
-            ->map(function ($schedule) {
-                return [
-                    'schedule_id'     => $schedule->id,
-                    'batch_name'      => $schedule->batch_name,
-                    'venue_interview' => $schedule->venue_interview,
-                    'date_interview'  => $schedule->date_interview,
-                    'time_interview'  => $schedule->time_interview,
-                    'applicant_no'    => $schedule->schedule_applicants_count,
-                ];
+        $search  = $request->input('search');
+        $perPage = $request->input('per_page', 10);
+
+        $query = Schedule::query()
+            ->withCount('scheduleApplicants');
+
+        // 🔍 Search
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('batch_name', 'like', "%{$search}%")
+                    ->orWhere('venue_interview', 'like', "%{$search}%");
             });
+        }
+
+        $schedules = $query->paginate($perPage);
+
+        // 🧹 Transform after pagination
+        $schedules->getCollection()->transform(function ($schedule) {
+            return [
+                'schedule_id'     => $schedule->id,
+                'batch_name'      => $schedule->batch_name,
+                'venue_interview' => $schedule->venue_interview,
+                'date_interview'  => $schedule->date_interview,
+                'time_interview'  => $schedule->time_interview,
+                'applicant_no'    => $schedule->schedule_applicants_count,
+            ];
+        });
 
         return response()->json($schedules);
     }
-
 
 
 

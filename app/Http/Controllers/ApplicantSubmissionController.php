@@ -27,7 +27,7 @@ use PhpOffice\PhpSpreadsheet\Shared\Date;
 class ApplicantSubmissionController extends Controller
 {
 
-    // list of applicant
+
     // list of applicant
     public function listOfApplicants(Request $request)
     {
@@ -48,15 +48,21 @@ class ApplicantSubmissionController extends Controller
         // 🔍 Global search (works across ALL pages)
         if ($search) {
             $query->where(function ($q) use ($search) {
-                $q->where('p.firstname', 'like', "%{$search}%")
-                    ->orWhere('p.lastname', 'like', "%{$search}%")
-                    ->orWhereRaw("CONCAT(p.firstname,' ',p.lastname) LIKE ?", ["%{$search}%"]);
+                $q->where('batch_name', 'like', "%{$search}%")
+                    ->orWhere('date_interview', 'like', "%{$search}%")
+                     ->orWhere('time_interview', 'like', "%{$search}%")
+                      ->orWhere('venue_interview', 'like', "%{$search}%");
             });
         }
 
-        $applicants = $query->paginate($perPage);
+        $schedule = $query->paginate($perPage);
 
-        return response()->json($applicants);
+         //  'batch_name',
+         // 'date_interview',
+         // 'time_interview',
+         // 'venue_interview'
+
+        return response()->json($schedule);
     }
 
 

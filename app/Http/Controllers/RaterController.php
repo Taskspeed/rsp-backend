@@ -225,8 +225,11 @@ class RaterController extends Controller
         ]);
     }
 
-    public function getAssignedJobs()
+    public function getAssignedJobs(Request $request)
     {
+        // $search = $request->input('search');
+        // $perPage = $request->input('per_page', 10);
+
         $user = Auth::user();
 
         $jobBatchIds = DB::table('job_batches_user')

@@ -48,10 +48,9 @@ class ApplicantSubmissionController extends Controller
         // 🔍 Global search (works across ALL pages)
         if ($search) {
             $query->where(function ($q) use ($search) {
-                $q->where('batch_name', 'like', "%{$search}%")
-                    ->orWhere('date_interview', 'like', "%{$search}%")
-                     ->orWhere('time_interview', 'like', "%{$search}%")
-                      ->orWhere('venue_interview', 'like', "%{$search}%");
+                $q->where('p.firstname', 'like', "%{$search}%")
+                    ->orWhere('p.lastname', 'like', "%{$search}%")
+                    ->orWhereRaw("CONCAT(p.firstname,' ',p.lastname) LIKE ?", ["%{$search}%"]);
             });
         }
 

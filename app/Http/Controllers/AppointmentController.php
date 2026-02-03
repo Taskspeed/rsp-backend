@@ -122,7 +122,9 @@ class AppointmentController extends Controller
                 $q->where('ControlNo', 'like', "%{$search}%")
                     ->orWhere('Firstname', 'like', "%{$search}%")
                     ->orWhere('Surname', 'like', "%{$search}%")
-                    ->orWhere('Occupation', 'like', "%{$search}%");
+                    ->orWhere('Occupation', 'like', "%{$search}%")
+                     ->orWhereRaw("CONCAT(Firstname,' ',Surname) LIKE ?", ["%{$search}%"]);
+
             });
         }
 

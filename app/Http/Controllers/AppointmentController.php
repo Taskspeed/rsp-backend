@@ -108,16 +108,55 @@ class AppointmentController extends Controller
 
 
     // need to fix to pagination and search optimize make readable
-    public function employee()
+    public function employee(Request $request)
     {
+        $search  = $request->input('search');
+        $perPage = $request->input('per_page', 10);
 
-        $employee = DB::table('xPersonal')->select('ControlNo', 'Firstname', 'Surname', 'Occupation')->get();
+        $query = DB::table('xPersonal')
+            ->select('ControlNo', 'Firstname', 'Surname', 'Occupation');
 
-        return response()->json($employee);
+        // 🔍 Search filter
+        if (!empty($search)) {
+            $query->where(function ($q) use ($search) {
+                $q->where('ControlNo', 'like', "%{$search}%")
+                    ->orWhere('Firstname', 'like', "%{$search}%")
+                    ->orWhere('Surname', 'like', "%{$search}%")
+                    ->orWhere('Occupation', 'like', "%{$search}%");
+            });
+        }
 
+        $employees = $query->paginate($perPage);
 
+        return response()->json($employees);
     }
-    
+
+    // public function employee(Request $request)
+    // {
+    //     $search  = $request->input('search');
+    //     $perPage = $request->input('per_page', 10);
+
+
+
+    //     $query = DB::table('xPersonal')->query('ControlNo', 'Firstname', 'Surname', 'Occupation')->get();
+
+    //     // 🔍 Search
+    //     if ($search) {
+    //         $query->where(function ($q) use ($search) {
+    //             $q->where('ControlNo', 'like', "%{$search}%")
+    //                 ->orWhere('Firstname', 'like', "%{$search}%")
+    //                 ->orWhere('Surname', 'like', "%{$search}%")
+    //                 >orWhere('Occupation', 'like', "%{$search}%");
+    //         });
+    //     }
+
+    //     $employee = $query->paginate($perPage);
+
+    //     return response()->json($employee);
+
+
+    // }
+
     // public function employee(Request $request)
     // {
     //     // Get page size (default 10)

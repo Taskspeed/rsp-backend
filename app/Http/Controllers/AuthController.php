@@ -292,7 +292,7 @@ class AuthController extends Controller
                 'name' => 'required|string|max:255',
                 'position' => 'required|string|max:255',
                 'active' => 'required|boolean',
-                'permissions.viewDashboardstat' => 'required|boolean',
+                'permissions.viewDashboardstat' => 'boolean',
                 'permissions.viewPlantillaAccess' => 'boolean',
                 'permissions.modifyPlantillaAccess' => 'boolean',
                 'permissions.viewJobpostAccess' => 'boolean',
@@ -430,7 +430,7 @@ class AuthController extends Controller
     }
 
     // Delete a user and associated rspControl data
-    public function deleteUser($id)
+    public function deleteUser($id , Request $request)
     {
         try {
             DB::beginTransaction();
@@ -454,6 +454,24 @@ class AuthController extends Controller
             $user->delete();
 
             DB::commit();
+
+            // ➕ Activity log after successful update
+            $currentUser = Auth::user();
+            if ($currentUser instanceof \App\Models\User) {
+                activity('User Management')
+                    ->causedBy($currentUser)
+                    ->performedOn($user)
+                    ->withProperties([
+                        'updated_user_id' => $user->id,
+                        'updated_user_name' => $user->name,
+                        'username' => $user->username,
+                        'position' => $user->position,
+                        'active' => $user->active,
+                        'ip' => $request->ip(),
+                        'user_agent' => $request->header('User-Agent'),
+                    ])
+                    ->log("{$currentUser->name} delete  {$user->name} account successfully.");
+            }
 
             return response()->json([
                 'status' => true,
@@ -481,6 +499,24 @@ class AuthController extends Controller
 
         $user->password = Hash::make('admin'); // temporary password
         $user->save();
+
+        // ➕ Activity log after successful update
+        $currentUser = Auth::user();
+        if ($currentUser instanceof \App\Models\User) {
+            activity('User Management')
+                ->causedBy($currentUser)
+                ->performedOn($user)
+                ->withProperties([
+                    'updated_user_id' => $user->id,
+                    'updated_user_name' => $user->name,
+                    'username' => $user->username,
+                    'position' => $user->position,
+                    'active' => $user->active,
+                    'ip' => $request->ip(),
+                    'user_agent' => $request->header('User-Agent'),
+                ])
+                ->log("{$currentUser->name} reset password {$user->name} account successfully.");
+        }
 
         return response()->json([
             'message' => 'Password reset successfully',

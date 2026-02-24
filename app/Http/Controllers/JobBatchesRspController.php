@@ -6,19 +6,15 @@ use App\Http\Requests\JobPostRepublishedRequest;
 use App\Http\Requests\JobPostStoreRequest;
 use App\Http\Requests\JobPostUpdateRequest;
 use Carbon\Carbon;
-use App\Models\Submission;
-use App\Models\rating_score;
+
 use Illuminate\Http\Request;
 use App\Models\JobBatchesRsp;
-use App\Models\OnCriteriaJob;
-use App\Models\OnFundedPlantilla;
+
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\DB;
-use App\Models\vwplantillastructure;
+
 use App\Services\ApplicantService;
 use App\Services\JobPostService;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
+
 
 
 class JobBatchesRspController extends Controller

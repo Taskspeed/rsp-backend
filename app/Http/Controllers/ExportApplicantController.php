@@ -2,12 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Submission;
+
 use Illuminate\Http\Request;
-use App\Models\JobBatchesRsp;
+
 use App\Services\ApplicantService;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Auth;
+
 
 class ExportApplicantController extends Controller
 {
@@ -21,7 +20,7 @@ class ExportApplicantController extends Controller
         return  $result;
     }
 
-    // export the applicant on the old job post to the new post job 
+    // export the applicant on the old job post to the new post job
     public function exportApplicant(Request $request, ApplicantService $applicantService)
     {
         /**
@@ -36,8 +35,6 @@ class ExportApplicantController extends Controller
             'applicants.*.id' => 'nullable|exists:nPersonalInfo,id',
             'applicants.*.ControlNo' => 'nullable|exists:xPersonal,ControlNo',
         ]);
-
-
 
         $result = $applicantService->store($validated,$request);
 

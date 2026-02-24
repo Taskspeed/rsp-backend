@@ -47,7 +47,7 @@ Route::middleware('auth:sanctum')->post('/logs/auth', [LogController::class, 'lo
 
 Route::prefix('rater')->group(function () {
     Route::get('/name', [RaterController::class, 'get_rater_usernames']); // fetch list of raters
-    Route::post('/login', [RaterAuthController::class, 'ratersLogin']); //  login for rater
+    Route::post('/login', [RaterAuthController::class, 'loginRater']); //  login for rater
 });
 
 Route::post('/login', [AuthController::class, 'adminLogin']); //  login for admin
@@ -93,16 +93,16 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('rater')->group(function () {
         Route::get('/assigned-job-batches', [RaterController::class, 'getAssignedJobs']);
         Route::get('/', [UsersController::class, 'getAuthenticatedrater']); // dashboard of rater
-        Route::post('/logout', [RaterAuthController::class, 'raterlogout']);
+        Route::post('/logout', [RaterAuthController::class, 'logoutRater']);
         Route::get('/users', [AuthController::class, 'getAllUsers']);
         Route::get('/', [UsersController::class, 'getAuthenticatedrater']);
         Route::delete('/{id}', [RaterAuthController::class, 'deleteUser']);
         Route::get('/criteria/applicant/{id}', [RaterController::class, 'getCriteriaApplicant']);
         Route::get('/show/{jobpostId}', [RaterController::class, 'showScores']);
-        Route::post('/edit/{id}', [RaterAuthController::class, 'editRater']);
-        Route::post('/update-password', [RaterAuthController::class, 'updatePassword']);
-        Route::post('/register', [RaterAuthController::class, 'raterRegister']);
-        Route::post('/change-password', [RaterAuthController::class, 'changePassword']);
+        Route::post('/edit/{id}', [RaterAuthController::class, 'updateRater']);
+        Route::post('/update-password', [RaterAuthController::class, 'updateRaterPassword']);
+        Route::post('/register', [RaterAuthController::class, 'createRaterAccount']);
+        Route::post('/change-password', [RaterAuthController::class, 'changeRaterPassword']);
         Route::get('/list', [RaterController::class, 'getAllRaters']);
         Route::get('/{raterId}', [RaterController::class, 'view']);
         //  });

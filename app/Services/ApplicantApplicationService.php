@@ -1597,7 +1597,7 @@ class ApplicantApplicationService
         $template = 'mail-template.application';
 
 
-        Mail::to($applicant->email_address)->queue(new EmailApi(
+        Mail::to($applicant->email_address)->queue((new EmailApi(
             $subject,
             $template,
             [
@@ -1610,7 +1610,7 @@ class ApplicantApplicationService
             ]
 
 
-        ));
+        ))->onQueue('emails'));
     }
 
     // Add this method to your controller for testing

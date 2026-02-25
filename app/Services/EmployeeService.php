@@ -166,7 +166,7 @@ class EmployeeService
         $template = 'mail-template.application';
 
 
-        Mail::to($applicant->email_address)->queue(new EmailApi(
+        Mail::to($applicant->email_address)->queue((new EmailApi(
             $subject,
             $template,
             [
@@ -179,7 +179,7 @@ class EmployeeService
             ]
 
 
-        ));
+        ))->onQueue('emails'));
     }
 
 
@@ -202,7 +202,7 @@ class EmployeeService
                 'Address' => $validated['Address'] ?? null,
 
             ]);
-            
+
         $updatedEmployee = DB::table('xPersonal')->where('ControlNo', $controlNo)->first();
         $employeeFullname = $updatedEmployee->Firstname . ' ' . $updatedEmployee->Surname;
 

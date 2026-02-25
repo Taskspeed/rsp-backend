@@ -2,15 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use Carbon\Carbon;
-use App\Mail\EmailApi;
+
 use App\Models\Schedule;
 use App\Models\Submission;
-use Doctrine\DBAL\Schema\Schema;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
+
 
 class ScheduleController extends Controller
 {

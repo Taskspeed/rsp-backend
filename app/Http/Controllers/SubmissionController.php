@@ -2,9 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use Carbon\Carbon;
-use App\Mail\EmailApi;
-use App\Models\nPersonal;
 
 use App\Models\Submission;
 use Illuminate\Http\Request;
@@ -12,7 +9,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Models\excel\nPersonal_info;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Mail;
+
 
 class SubmissionController extends Controller
 {

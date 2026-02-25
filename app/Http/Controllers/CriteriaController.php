@@ -15,33 +15,40 @@ use App\Services\CriteriaService;
 class CriteriaController extends Controller
 {
 
+     protected $criteriaService;
+
+     public function __construct(CriteriaService $criteriaService)
+         {
+                $this->criteriaService = $criteriaService;
+         }
+
     // creating a criteria per job post and if the job post already have criteria then try
     // to create a new one criteria for that post it will be update the old criteria
-    public function storeCriteria(CriteriaRequest $request, CriteriaService $criteriaService)
+    public function storeCriteria(CriteriaRequest $request,)
     {
         $validated = $request->validated();
 
-        $result = $criteriaService->store($validated,$request);
+        $result = $this->criteriaService->store($validated,$request);
 
         return $result;
     }
 
 
     // deleting the criteria of job_post
-    public function deleteCriteria($id, Request $request, CriteriaService $criteriaService)
+    public function deleteCriteria($id, Request $request,)
     {
 
-        $result = $criteriaService->delete($id ,$request);
+        $result = $this->criteriaService->delete($id ,$request);
 
         return $result;
 
     }
 
       // this is for view criteria on admin to view the criteria of the job post
-    public function viewCriteria($job_batches_rsp_id, CriteriaService $criteriaService)
+    public function viewCriteria($job_batches_rsp_id,)
     {
 
-        $result = $criteriaService->view($job_batches_rsp_id);
+        $result = $this->criteriaService->view($job_batches_rsp_id);
 
         return $result;
 
@@ -49,33 +56,33 @@ class CriteriaController extends Controller
 
 
     // store criteria library
-    public function criteriaLibStore(CriteriaLiBStoreRequest $request, CriteriaService $criteriaService)
+    public function criteriaLibStore(CriteriaLiBStoreRequest $request, )
     {
 
         $validated = $request->validated();
 
-        $result = $criteriaService->libStore($validated,$request);
+        $result = $this->criteriaService->libStore($validated,$request);
 
         return  $result;
 
     }
 
     // update criteria library
-    public function criteriaLibUpdate( $criteriaId, CriteriaLiBUpdateRequest $request, CriteriaService $criteriaService)
+    public function criteriaLibUpdate( $criteriaId, CriteriaLiBUpdateRequest $request,)
     {
 
         $validated = $request->validated();
 
-        $result = $criteriaService->libUpdate($validated,$criteriaId,$request);
+        $result = $this->criteriaService->libUpdate($validated,$criteriaId,$request);
 
         return $result;
     }
 
     // delete  criteria library
-    public function criteriaLibDelete($criteriaId, Request $request, CriteriaService $criteriaService)
+    public function criteriaLibDelete($criteriaId, Request $request,)
     {
 
-        $result = $criteriaService->libDelete($criteriaId, $request);
+        $result = $this->criteriaService->libDelete($criteriaId, $request);
 
         return $result;
     }
@@ -85,18 +92,18 @@ class CriteriaController extends Controller
     public function fetchCriteriaDetails($criteriaId, CriteriaService $criteriaService)
     {
 
-        $result = $criteriaService->details($criteriaId);
+        $result = $this->criteriaService->details($criteriaId);
 
         return $result;
 
     }
 
     // fetch criteria base on the sg if the  job post are no criteria yet
-    public function fetchNonCriteriaJob($sg, CriteriaService $criteriaService)
+    public function fetchNonCriteriaJob($sg)
     {
         $sg = (int) $sg; // force integer
 
-     $result = $criteriaService->CriteriaJob($sg);
+     $result = $this->criteriaService->CriteriaJob($sg);
 
         return $result;
 

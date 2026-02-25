@@ -15,6 +15,15 @@ use App\Services\EmployeeService;
 class ApplicantSubmissionController extends Controller
 {
 
+    protected $applicantApplicationService;
+    protected $employeeService;
+
+    public function __construct(EmployeeService $employeeService, ApplicantApplicationService $applicantApplicationService)
+    {
+        $this->employeeService = $employeeService;
+        $this->applicantApplicationService = $applicantApplicationService;
+    }
+
 
     // list of applicant
     public function listOfApplicants(Request $request)
@@ -44,10 +53,10 @@ class ApplicantSubmissionController extends Controller
 
         $schedule = $query->paginate($perPage);
 
-         //  'batch_name',
-         // 'date_interview',
-         // 'time_interview',
-         // 'venue_interview'
+        //  'batch_name',
+        // 'date_interview',
+        // 'time_interview',
+        // 'venue_interview'
 
         return response()->json($schedule);
     }
@@ -67,7 +76,7 @@ class ApplicantSubmissionController extends Controller
         // ensure a Y-m-d string for whereDate
         $date_of_birth = \Carbon\Carbon::parse($validated['date_of_birth'])->toDateString();
 
-        $applicants = Submission::select('id', 'nPersonalInfo_id', 'job_batches_rsp_id','status')
+        $applicants = Submission::select('id', 'nPersonalInfo_id', 'job_batches_rsp_id', 'status')
             ->whereHas('nPersonalInfo', function ($query) use ($firstname, $lastname, $date_of_birth) {
                 $query->whereDate('date_of_birth', $date_of_birth)
                     ->where(function ($q) use ($firstname, $lastname) {
@@ -110,7 +119,7 @@ class ApplicantSubmissionController extends Controller
         return response()->json($submission);
     }
 
-    public function employeeStoreApplicantApplication(Request $request,EmployeeService $employeeService) // employee applicant
+    public function employeeStoreApplicantApplication(Request $request,) // employee applicant
     {
 
         // ✅ Validate request
@@ -119,20 +128,19 @@ class ApplicantSubmissionController extends Controller
             'job_batches_rsp_id' => 'required|exists:job_batches_rsp,id',
         ]);
 
-        $result = $employeeService->employeeApplicant($validated);
+        $result = $this->employeeService->employeeApplicant($validated);
 
         return $result;
-
     }
 
     // applicant application zipfile and excel file
-    public function applicantStoreApplication(ApplicantApplicationRequest $request , ApplicantApplicationService $applicantApplicationService){
+    public function applicantStoreApplication(ApplicantApplicationRequest $request,)
+    {
 
-    $validated = $request->validated();
+        $validated = $request->validated();
 
-    $result = $applicantApplicationService->applicantApplication($validated,$request->file('excel_file'), $request->file('zip_file'));
+        $result = $this->applicantApplicationService->applicantApplication($validated, $request->file('excel_file'), $request->file('zip_file'));
 
-     return $result;
-
+        return $result;
     }
 }

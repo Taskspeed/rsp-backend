@@ -4,23 +4,12 @@ namespace App\Http\Controllers;
 
 
 use App\Http\Controllers\Controller;
-use App\Models\criteria\criteria_rating;
-use App\Models\draft_score;
-use App\Models\Job_batches_user;
 use App\Models\JobBatchesRsp;
 use App\Models\rating_score;
-use App\Models\Submission;
-use App\Models\User;
 use App\Services\ApplicantService;
 use App\Services\RaterService;
-use App\Services\RatingService;
-use Exception;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Validator;
+
 
 class RaterController extends Controller
 {
@@ -141,7 +130,7 @@ class RaterController extends Controller
         ]);
     }
 
-
+    // fetch the job post only assess,pending, not started
     public function jobListAssigned()
     {
         // ✅ Fetch only job posts excluding 'unoccupied' and 'occupied'
@@ -152,10 +141,6 @@ class RaterController extends Controller
         return response()->json($jobs);
     }
 
-    public function applicantHistoryScore(){ // history score of the applicant
-
-
-    }
 
 
 

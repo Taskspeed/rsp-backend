@@ -89,7 +89,7 @@ class CriteriaController extends Controller
 
 
    // fetching the criteria
-    public function fetchCriteriaDetails($criteriaId, CriteriaService $criteriaService)
+    public function fetchCriteriaDetails($criteriaId,)
     {
 
         $result = $this->criteriaService->details($criteriaId);

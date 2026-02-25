@@ -13,7 +13,7 @@ class QueueWorkerTestJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public $timeout = 5;
+    public $timeout = 10;
     protected $testKey;
 
     public function __construct($testKey)

@@ -255,9 +255,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
     Route::prefix('generate')->group(function () {
-        Route::get('/', [ReportController::class, 'generatePlantilla']);
+        Route::get('/', [ReportController::class, 'reportPlantilla']);
         Route::post('/cancel/{jobId}', [ReportController::class, 'cancelPlantilla']);
-        Route::get('/status/{jobId}', [ReportController::class, 'checkPlantillaStatus']);
+        Route::get('/status/{jobId}', [ReportController::class, 'statusplantilla']);
     });
 
 

@@ -90,7 +90,7 @@ class ScheduleService
             ]);
 
             /** send email */
-            Mail::to($email)->queue(new EmailApi(
+            Mail::to($email)->queue((new EmailApi(
                 "Interview Invitation",
                 'mail-template.interview',
                 [
@@ -103,7 +103,7 @@ class ScheduleService
                     'SalaryGrade' => $SalaryGrade,
                     'office' => $office,
                 ]
-            ));
+            ))->onQueue('emails'));
 
             $count++;
         }
@@ -180,7 +180,7 @@ class ScheduleService
             }
             $isInternal = !is_null($submission->nPersonalInfo_id);
 
- 
+
             if ($isInternal) {
                 // INTERNAL
                 $educationRecords  = $submission->getEducationRecordsInternal();
@@ -209,7 +209,7 @@ class ScheduleService
             $template = 'mail-template.unqualified';
 
             try {
-                Mail::to($email)->queue(
+                Mail::to($email)->queue((
                     new EmailApi(
                         "Application - Unqualified",
                         $template,
@@ -244,7 +244,7 @@ class ScheduleService
                             'date' => now()->format('F d, Y'),
                         ]
                     )
-                );
+                )->onQueue('emails'));
 
                 // Log::info("📧 Queued UNQUALIFIED email for {$fullname} ({$email}).");
 

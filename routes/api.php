@@ -266,7 +266,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/job-post', [ReportController::class, 'getJobPost']);
 
         Route::get('/job-post/{jobpostId}', [ReportController::class, 'getApplicantJobPost']);
-        Route::get('/applicant-final-score/{jobpostId}', [ReportController::class, 'applicantFinalScore']); // final summary of rating qulification standard
+        Route::get('/applicant-final-score/{jobpostId}', [ReportController::class, 'reportApplicantFinalScore']); // final summary of rating qulification standard
         Route::get('/placement-list/{office}', [ReportController::class, 'placementList']);
         Route::get('/job/complete', [JobBatchesRspController::class, 'jobPostCompleteStatus']);   //  create a new job post
         Route::get('/ranking/applicant/{date}', [ReportController::class, 'topFiveApplicants']);  //get top 5 ranking applicant publication

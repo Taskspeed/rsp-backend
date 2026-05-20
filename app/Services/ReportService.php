@@ -49,9 +49,19 @@ class ReportService
             ->groupBy('ControlNo');
 
         // actual salary
-        $latestXService = DB::table('xService')
-            ->select('ControlNo', DB::raw('MAX(PMID) as latest_pmid'))
-            ->groupBy('ControlNo');
+        // $latestXService = DB::table('xService')
+        //     ->select('ControlNo', DB::raw('MAX(PMID) as latest_pmid'))
+        //     ->groupBy('ControlNo');
+
+               $latestXService = DB::table('xService')
+                ->select(
+                    'ControlNo',
+                    DB::raw('MAX(ToDate) as latest_todate'),
+                    DB::raw('MAX(FromDate) as latest_fromdate')
+             
+                )
+                ->groupBy('ControlNo');
+                
 
 
         $rows = DB::table('vwplantillastructure as p')
@@ -70,7 +80,12 @@ class ReportService
             })
 
             // join xService using latest PMID
-            ->leftJoin('xService as s', 's.PMID', '=', 'lx.latest_pmid')
+            // ->leftJoin('xService as s', 's.PMID', '=', 'lx.latest_pmid')
+                ->leftJoin('xService as s', function ($join) {
+                $join->on('s.ControlNo', '=', 'lx.ControlNo')
+                    ->on('s.ToDate', '=', 'lx.latest_todate')
+                    ->on('s.FromDate', '=', 'lx.latest_fromdate');
+            })
 
             ->select(
                 'p.*',
@@ -1794,10 +1809,10 @@ private function convertHoursToYearsMonthsDays(int $totalHours, string $label = 
     // fetch the rating of the rater on the  specific job post
     public function ratingFormQualificationStandard($validated)
     {
-        $user = Auth::user();
+        $user = User::where('id',$validated['raterId'])->first();
 
         $jobBatch = JobBatchesRsp::with([
-            'ratingScores' => function ($query) use ($user) {
+            'ratingScores' => function ($query) use ($validated) {
                 $query->select(
                     'id',
                     'user_id',
@@ -1813,7 +1828,7 @@ private function convertHoursToYearsMonthsDays(int $totalHours, string $label = 
                     'total_qs',
                     'grand_total',
                     'ranking'
-                )->where('user_id', $user->id)
+                )->where('user_id',$validated['raterId'])
                     // ✅ Eager load applicant names via nested with
                     ->with([
                         'internalApplicant' => fn($q) => $q->select('id', 'firstname', 'lastname',),
@@ -1900,7 +1915,7 @@ private function convertHoursToYearsMonthsDays(int $totalHours, string $label = 
                 'representative' => $user->representative ?? '',
                 'position' => $user->position ?? '',
                 'role_type' => $user->role_type ?? '',
-            ],
+            ], 
 
         ]);
     }
@@ -1973,10 +1988,12 @@ private function convertHoursToYearsMonthsDays(int $totalHours, string $label = 
                 $lastname  = $active->Surname   ?? null;
                 $pics      = $active->Pics ?? null;
 
-                // ✅ Get LATEST service record by PMID (single record)
-                $current_service = xService::where('ControlNo', $firstRow->ControlNo)
-                    ->orderByDesc('PMID')
-                    ->first(); // ✅ first() not get()
+                // ✅ Get LATEST service record by orderByDesc (single record)
+                $current_service = DB::table('xService')
+                    ->where('ControlNo', $firstRow->ControlNo)
+                    ->orderByDesc('ToDate')
+                    ->orderByDesc('FromDate')
+                    ->first();
 
                 // ✅ Now safe to use $current_service
                 $office      = $current_service->Office      ?? null;

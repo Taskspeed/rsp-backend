@@ -11,6 +11,7 @@ use App\Http\Controllers\EmailController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\ExportApplicantController;
 use App\Http\Controllers\JobBatchesRspController;
+use App\Http\Controllers\LibraryController;
 use App\Http\Controllers\LogController;
 use App\Http\Controllers\OnCriteriaJobController;
 use App\Http\Controllers\OnFundedPlantillaController;
@@ -191,6 +192,7 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     Route::prefix('dashboard')->group(function () {
+        // Route::get('plantilla/data', [DashboardController::class, 'totalApplicantStatus']);
         Route::get('/', [DashboardController::class, 'totalApplicantStatus']);
         Route::get('/summary-by-office', [DashboardController::class, 'applicantSummaryByOffice']);
         Route::get('/job-post', [DashboardController::class, 'jobPost']);
@@ -246,6 +248,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/qs/edit', [ApplicantSubmissionController::class, 'applicantQsEdit']); // for applicant manual
 
         Route::get('/internal-image-pds/{controlNo}', [JobBatchesRspController::class, 'getInternalPdsImage']);
+        Route::get('/wes/{controlNo}', [EmployeeController::class, 'workExperienceSheet']);
         // Route::get('/pds-image/{filename}', [JobBatchesRspController::class, 'proxyPdsImage']);
 
         // delete the submission of the applicant
@@ -305,6 +308,7 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
 
+    // generate plantilla
     Route::prefix('generate')->group(function () {
         Route::get('/', [ReportController::class, 'reportPlantilla']);
         Route::post('/cancel/{jobId}', [ReportController::class, 'cancelPlantilla']);
@@ -346,6 +350,8 @@ Route::middleware('auth:sanctum')->group(function () {
         // list of job with bei only
         Route::get('/job-bei', [JobBatchesRspController::class, 'jostPostWithBei']);
 
+        // all applicant 
+        Route::get('/applicant/{date}', [ApplicantSubmissionController::class, 'applicantApplied']);
     });
 
     Route::post('/submissions/multiple', [ExportApplicantController::class, 'exportApplicant']); // store applicant multiple on jobpost usong export
@@ -383,6 +389,16 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/job-post/{postDate}/{endDate}', [JobBatchesRspController::class, 'jobPostFiltered']);
 
     Route::get('/proxy-image/{submissionId}', [SubmissionController::class, 'getImageInternalApplicant']);
+
+
+
+    Route::prefix('library')->group(function () {
+            Route::get('/remark/index', [LibraryController::class, 'index']); // store remarks
+            Route::post('/remark/store', [LibraryController::class, 'store']); // store remarks
+            Route::post('/remark/update/{remarksId}', [LibraryController::class, 'update']); // store remarks
+            Route::delete('/remark/delete/{remarksId}', [LibraryController::class, 'delete']); // store remarks
+
+    });
 });
 
 

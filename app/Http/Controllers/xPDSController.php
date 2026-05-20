@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Response;
 
 class xPDSController extends Controller
@@ -81,7 +82,7 @@ class xPDSController extends Controller
         return [$userArray];
     }
 
-   
+
     private function getUserData($controlNo)
     {
         $result = DB::table('xPersonal')
@@ -180,17 +181,18 @@ class xPDSController extends Controller
             ->get()
             ->map(function ($row) {
 
-            $row->id = (int) $row->id;
+                $row->id = (int) $row->id;
 
-            // ✅ format LDate here
-            $row->LDate = $row->LDate
-                ? \Carbon\Carbon::parse($row->LDate)->format('d/m/Y')
-                : null;
+                // ✅ format LDate here
+                // $row->LDate = $row->LDate
+                //     ? \Carbon\Carbon::parse($row->LDate)->format('d/m/Y')
+                //     : null;
+                $this->safeDate($row->LDate);
 
-            return $row;
-        });
+                return $row;
+            });
 
-    return $this->convertToArray($result);
+        return $this->convertToArray($result);
     }
 
     private function getExperienceData($controlNo)
@@ -213,8 +215,8 @@ class xPDSController extends Controller
             ->get()
             ->map(fn($row) => [
                 'id'       => $row->id,
-                'WFrom'    => $row->WFrom,
-                'WTo'      => $row->WTo,
+                'WFrom'    => $this->safeDate($row->WFrom),
+                'WTo'      => $this->safeDate($row->WTo),
                 'WPosition' => $this->upper($row->WPosition),
                 'WCompany' => $this->upper($row->WCompany),
                 'WSalary'  => $row->WSalary ? '₱ ' . number_format($row->WSalary, 2) : '₱ 0.00',
@@ -224,13 +226,53 @@ class xPDSController extends Controller
                 'source'   => 'xExperience',
             ]);
 
-        $latestService = DB::table('xService')
-            ->where('ControlNo', $controlNo)
-            ->orderByDesc('PMID')
-            ->first();
+        // $latestService = DB::table('xService')
+        //     ->where('ControlNo', $controlNo)
+        //     ->orderByDesc('PMID')
+        //     ->first();
 
         // xService records — mapped to xExperience format
-        $service = DB::table('xService')
+        // $service = DB::table('xService')
+        //     ->select([
+        //         'PMID as id',
+        //         'ControlNo',
+        //         'FromDate',
+        //         'ToDate',
+        //         'Designation',
+        //         'Office',
+        //         'Branch',
+        //         'RateDay',
+        //         'RateMon',
+        //         'Grades',
+        //         'Steps',
+        //         'Status',
+        //     ])
+        //     ->where('ControlNo', $controlNo)
+        //     ->get()
+        //     ->map(fn($row) => [
+        //         'id'        => $row->id,
+        //         'WFrom'     => $row->FromDate ? \Carbon\Carbon::parse($row->FromDate)->format('d/m/Y') : null,
+
+        //         // If this is the latest record AND ToDate is in the future → show "Present"
+        //         'WTo'       => ($row->id === $latestService->PMID && \Carbon\Carbon::parse($row->ToDate)->isFuture())
+        //             ? 'PRESENT'
+        //             : ($row->ToDate ? \Carbon\Carbon::parse($row->ToDate)->format('d/m/Y') : null),
+
+        //         'WPosition' => $row->Designation,
+        //         'WCompany'  => trim($row->Office . '/' . $row->Branch),
+        //         // CONTRACTUAL: RateDay x 22, others: RateMon
+        //         'WSalary'   => $row->Status === 'CONTRACTUAL'
+        //             ? '₱ ' . number_format($row->RateDay * 22, 2)
+        //             : ($row->RateMon ? '₱ ' . number_format($row->RateMon, 2) : '₱ 0.00'),
+        //         'WGrade'    => trim($row->Grades . '-' . $row->Steps),
+        //         'Status'    => $row->Status,
+        //         'WGov' => ($row->Status === 'CONTRACTUAL' || $row->Status === 'HONORARIUM') ? 'NO' : 'YES',
+        //         'source'    => 'xService',
+        //     ]);
+
+        // ✅ Merge both collections and convert to array
+        // return $experience->merge($service)->values()->toArray();
+        $serviceRecords = DB::table('xService')
             ->select([
                 'PMID as id',
                 'ControlNo',
@@ -246,30 +288,97 @@ class xPDSController extends Controller
                 'Status',
             ])
             ->where('ControlNo', $controlNo)
-            ->get()
-            ->map(fn($row) => [
+            ->orderBy('FromDate')
+            ->get();
+
+        // =========================
+        // Get latest service record
+        // based on ToDate then FromDate
+        // =========================
+        $latestService = $serviceRecords
+            ->sortByDesc(function ($row) {
+                return [
+                    $row->ToDate,
+                    $row->FromDate,
+                ];
+            })
+            ->first();
+
+        // =========================
+        // Map xService
+        // =========================
+        $service = $serviceRecords->map(function ($row) use ($latestService) {
+
+            $fromDate = $row->FromDate
+                ? \Carbon\Carbon::parse($row->FromDate)
+                : null;
+
+            $toDate = $row->ToDate
+                ? \Carbon\Carbon::parse($row->ToDate)
+                : null;
+
+            $isLatest = $latestService
+                && $row->id === $latestService->id;
+
+            return [
                 'id'        => $row->id,
-                'WFrom'     => $row->FromDate ? \Carbon\Carbon::parse($row->FromDate)->format('d/m/Y') : null,
 
-                // If this is the latest record AND ToDate is in the future → show "Present"
-                'WTo'       => ($row->id === $latestService->PMID && \Carbon\Carbon::parse($row->ToDate)->isFuture())
+                'WFrom'     => $fromDate
+                    ? $fromDate->format('d/m/Y')
+                    : null,
+
+                'WTo'       => (
+                    $isLatest &&
+                    $toDate &&
+                    $toDate->isFuture()
+                )
                     ? 'PRESENT'
-                    : ($row->ToDate ? \Carbon\Carbon::parse($row->ToDate)->format('d/m/Y') : null),
+                    : ($toDate
+                        ? $toDate->format('d/m/Y')
+                        : null),
 
-                'WPosition' => $row->Designation,
-                'WCompany'  => trim($row->Office . '/' . $row->Branch),
-                // CONTRACTUAL: RateDay x 22, others: RateMon
+                'WPosition' => $this->upper($row->Designation),
+
+                'WCompany'  => $this->upper(
+                    trim(($row->Office ?? '') .
+                        ($row->Branch ? '/' . $row->Branch : ''))
+                ),
+
                 'WSalary'   => $row->Status === 'CONTRACTUAL'
-                    ? '₱ ' . number_format($row->RateDay * 22, 2)
-                    : ($row->RateMon ? '₱ ' . number_format($row->RateMon, 2) : '₱ 0.00'),
-                'WGrade'    => trim($row->Grades . '-' . $row->Steps),
-                'Status'    => $row->Status,
-                'WGov' => ($row->Status === 'CONTRACTUAL' || $row->Status === 'HONORARIUM') ? 'NO' : 'YES',
-                'source'    => 'xService',
-            ]);
+                    ? '₱ ' . number_format(($row->RateDay ?? 0) * 22, 2)
+                    : '₱ ' . number_format(($row->RateMon ?? 0), 2),
 
-        // ✅ Merge both collections and convert to array
-        return $experience->merge($service)->values()->toArray();
+                'WGrade'    => trim(
+                    ($row->Grades ?? '') .
+                        ($row->Steps ? '-' . $row->Steps : '')
+                ),
+
+                'Status'    => $this->upper($row->Status),
+
+                'WGov'      => in_array(
+                    strtoupper($row->Status),
+                    ['CONTRACTUAL', 'HONORARIUM']
+                )
+                    ? 'NO'
+                    : 'YES',
+
+                'source'    => 'xService',
+            ];
+        });
+
+        // =========================
+        // Merge both
+        // =========================
+        return $experience
+            ->merge($service)
+            ->sortByDesc(function ($item) {
+                return \Carbon\Carbon::createFromFormat(
+                    'd/m/Y',
+                    $item['WFrom']
+                )->timestamp ?? 0;
+            })
+            ->values()
+            ->toArray();
     }
 
     private function getVoluntaryData($controlNo)
@@ -297,26 +406,28 @@ class xPDSController extends Controller
 
 
             ])
-           ->where('ControlNo', $controlNo)
-        ->get()
-        ->map(function ($row) {
+            ->where('ControlNo', $controlNo)
+            ->get()
+            ->map(function ($row) {
 
-            $row->id = (int) $row->id;
+                $row->id = (int) $row->id;
 
-            // ✅ format dates here
-            $row->DateFrom = $row->DateFrom
-                ? \Carbon\Carbon::parse($row->DateFrom)->format('d/m/Y')
-                : null;
+                // ✅ format dates here
+                // $row->DateFrom = $row->DateFrom
+                //     ? \Carbon\Carbon::parse($row->DateFrom)->format('d/m/Y')
+                //     : null;
+                $this->safeDate($row->DateFrom);
 
-            $row->DateTo = $row->DateTo
-                ? \Carbon\Carbon::parse($row->DateTo)->format('d/m/Y')
-                : null;
+                // $row->DateTo = $row->DateTo
+                //     ? \Carbon\Carbon::parse($row->DateTo)->format('d/m/Y')
+                //     : null;
+                $this->safeDate($row->DateTo);
 
-            return $row;
-        });
+                return $row;
+            });
 
-    return $this->convertToArray($result);
-}
+        return $this->convertToArray($result);
+    }
 
     private function getSkillsData($controlNo)
     {
@@ -368,5 +479,28 @@ class xPDSController extends Controller
     private function upper($value)
     {
         return strtoupper(trim($value ?? ''));
+    }
+
+    private function safeDate($date, $format = 'd/m/Y')
+    {
+        if (
+            empty($date) ||
+            $date === '-' ||
+            $date === '0000-00-00'
+        ) {
+            return null;
+        }
+
+        try {
+            return \Carbon\Carbon::parse($date)->format($format);
+        } catch (\Exception $e) {
+
+            Log::warning('Invalid date encountered', [
+                'date' => $date,
+                'message' => $e->getMessage()
+            ]);
+
+            return null;
+        }
     }
 }

@@ -37,7 +37,7 @@ use Illuminate\Support\Facades\Route;
 
 
 
-
+Route::get('employee/list', [AppointmentController::class, 'employee']); // employe list
 
 Route::get('/applicant/pds-image/{filename}', [JobBatchesRspController::class, 'proxyPdsImage']);
 

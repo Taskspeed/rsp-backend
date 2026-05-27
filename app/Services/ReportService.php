@@ -58,10 +58,10 @@ class ReportService
                     'ControlNo',
                     DB::raw('MAX(ToDate) as latest_todate'),
                     DB::raw('MAX(FromDate) as latest_fromdate')
-             
+
                 )
                 ->groupBy('ControlNo');
-                
+
 
 
         $rows = DB::table('vwplantillastructure as p')
@@ -903,7 +903,7 @@ class ReportService
     public function topApplicant($postDate)
     {
 
-        $rater = User::select('name', 'position', 'role_type', 'representative', 'active', 'role_id')->where('active', 1)->where('role_id', 2)->get();
+        $rater = User::select('name', 'position', 'role_type', 'representative', 'active', 'role_id','prefix','suffix')->where('active', 1)->where('role_id', 2)->get();
         $jobPosts = JobBatchesRsp::whereDate('post_date', $postDate)
             ->select(
                 'id',
@@ -1471,7 +1471,7 @@ class ReportService
                         continue; // ❌ skip broken external record
                     }
 
-                    $tempReorg = DB::table('tempRegAppointmentReorg')
+                    $tempReorg = DB::table('vwActive')
                         ->where('ControlNo', $submission->ControlNo)
                         ->select('Office', 'Designation')
                         ->first();
@@ -1483,7 +1483,7 @@ class ReportService
 
 
                     $educationRecords   = $submission->getEducationRecordsInternal();
-                    $experienceRecords  = $submission->getExperienceRecordsInternal();
+                    $experienceRecords  = $submission->getExperienceRecordsInternal($submission->ControlNo);
                     $trainingRecords    = $submission->getTrainingRecordsInternal();
                     $eligibilityRecords = $submission->getEligibilityRecordsInternal();
 
@@ -1539,7 +1539,7 @@ class ReportService
     }
 
     // ✅ Helper: Convert total hours to years, months, days
-private function convertHoursToYearsMonthsDays(int $totalHours, string $label = ''): string
+public function convertHoursToYearsMonthsDays(int $totalHours, string $label = ''): string
     {
         $hoursPerDay   = 8;
         $daysPerMonth  = 22; // average working days per month
@@ -1785,7 +1785,35 @@ private function convertHoursToYearsMonthsDays(int $totalHours, string $label = 
     //     return $this->convertHoursToYearsMonthsDays($totalHours,'of relevant experience');
     // }
 
+//     $totalDays = 0;
 
+//     foreach ($experienceRecords as $exp) {
+//         $from = $exp->WFrom ?? null;
+//         $to   = $exp->WTo   ?? null;
+
+//         if ($from && $to) {
+//             try {
+//                 $start = $this->parseFlexibleDate($from);
+
+//                 // ✅ Handle "CURRENT" as today's date
+//                 $end = (strtoupper(trim($to)) === 'CURRENT')
+//                     ? Carbon::today()
+//                     : $this->parseFlexibleDate($to);
+
+//                 if ($start && $end && $end->gte($start)) {
+//                     $totalDays += $start->diffInWeekdays($end);
+//                 }
+//             } catch (\Exception $e) {
+//                 $controlNo = $exp->ControlNo ?? $exp->id ?? 'unknown';
+//                 Log::warning("Experience date parse failed [{$controlNo}]: from={$from} to={$to} | {$e->getMessage()}");
+//             }
+//         }
+//     }
+
+//     $totalHours = $totalDays * 8;
+
+//     return $this->convertHoursToYearsMonthsDays($totalHours, 'of relevant experience');
+// }
 
     // ✅ Helper method to format eligibility
     // private function formatEligibilityForQualifiedInternal($eligibilityRecords)
@@ -1915,7 +1943,7 @@ private function convertHoursToYearsMonthsDays(int $totalHours, string $label = 
                 'representative' => $user->representative ?? '',
                 'position' => $user->position ?? '',
                 'role_type' => $user->role_type ?? '',
-            ], 
+            ],
 
         ]);
     }

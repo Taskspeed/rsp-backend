@@ -427,6 +427,10 @@ class RaterService
 
             ])
             ->where('status', 'qualified')
+           ->where(function ($query) {
+                $query->whereNull('application_status')
+                    ->orWhere('application_status', '!=', 'withdraw');
+            })
             ->get();
 
         $applicants = $submissions->map(function ($submission) use ($userId, $id) {

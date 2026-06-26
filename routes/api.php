@@ -140,6 +140,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/delete/{id}', [SubmissionController::class, 'delete']);
         Route::post('/draft', [RaterController::class, 'draftApplicantScore']); // draft score for applicant rating score
         Route::post('/score', [RaterController::class, 'storeApplicantScore']); // final submission of the applicant score
+        Route::put('/returned', [RaterController::class, 'updateJobAssignedRingStatus']); // update returned to edit the rating of the applicant
     });
 
     Route::prefix('appointment')->group(function () {
@@ -377,6 +378,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // list of applicant no rating score
         Route::post('/applicant/no-rating-score', [ReportController::class, 'applicantNoRatingScores']); 
+
+        // list of applicant withraw  application 
+        Route::get('/applicant/withraw/application/{date}', [ReportController::class, 'listApplicantWithdrawApplication']); 
+
 
 
 

@@ -7,6 +7,7 @@ use App\Models\criteria\criteria_rating;
 use App\Models\Submission;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class ApplicantExamScoreService
 {
@@ -53,10 +54,20 @@ class ApplicantExamScoreService
                 $examPercentage = ($applicant['exam_score'] / $applicant['exam_total_score']) * $weight;
             }
 
+
             // 4. Save — merge computed percentage into the applicant payload
+
+            // $examScore = ApplicantExamScore::create(
+            //     ['submission_id' => $applicant['submission_id']],
+            //     array_merge($applicant, ['exam_percentage' => $examPercentage])
+            // );
+
             $examScore = ApplicantExamScore::create(
-                ['submission_id' => $applicant['submission_id']],
-                array_merge($applicant, ['exam_percentage' => $examPercentage])
+                array_merge(
+                    ['submission_id' => $applicant['submission_id']],
+                    $applicant,
+                    ['exam_percentage' => $examPercentage]
+                )
             );
 
             $results[] = $examScore;
@@ -146,6 +157,7 @@ class ApplicantExamScoreService
         $external = Submission::query()
             ->join('nPersonalInfo as p', 'submission.nPersonalInfo_id', '=', 'p.id')
             ->join('job_batches_rsp as jb', 'submission.job_batches_rsp_id', '=', 'jb.id')
+            ->where('submission.status','Qualified')
             ->whereNotNull('submission.nPersonalInfo_id')
             ->whereNotIn('submission.id', $hasExamScore) // ✅ exclude already scored
             ->select(
@@ -172,6 +184,8 @@ class ApplicantExamScoreService
         $internal = Submission::query()
             ->join('xPersonal as xp', 'submission.ControlNo', '=', 'xp.ControlNo')
             ->join('job_batches_rsp as jb', 'submission.job_batches_rsp_id', '=', 'jb.id')
+            ->where('submission.status','Qualified')
+
             ->whereNull('submission.nPersonalInfo_id')
             ->whereNotIn('submission.id', $hasExamScore) // ✅ exclude already scored
             ->select(

@@ -839,4 +839,13 @@ class ReportController extends Controller
 
         return $this->excelService->topApplicant($validated);
     }
+
+      public function recommendedApplicant(Request $request)
+    {
+        $validated = $request->validate([
+            'publication_date' => 'required',
+        ]);
+
+        return $this->excelService->applicant($validated);
+    }
 }

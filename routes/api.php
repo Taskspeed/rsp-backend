@@ -240,6 +240,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/schedule/details/{scheduleId}', [ScheduleController::class, 'getApplicantInterview']); // schedule of the applicant details
         Route::post('/details', [ApplicantSubmissionController::class, 'getApplicantDetails']); //  fetch the applicant detail of jon post he apply
         Route::get('/{id}', [JobBatchesRspController::class, 'applicantPds']); // fetching the applicant per job post
+
+
         Route::get('/score/{applicantId}/{jobpostId}', [RaterController::class, 'applicantScoreIndividual']); // fetch the history of the applicant
 
 
@@ -444,22 +446,21 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     Route::prefix('assign')->group(function () {
-        Route::get('/employee/list', [EmployeeAssignController::class, 'indexEmployeeAssign']);
-        Route::get('/office/employee/{office}', [OfficeController::class, 'getEmployee']);
-        Route::get('/employee/{office}', [OfficeController::class, 'contractualEmployee']);
-        Route::post('/employee/store', [EmployeeAssignController::class, 'storeEmployeeAssign']);
-        Route::get('/employee/detials/{employeeAssignId}', [EmployeeAssignController::class, 'viewEmployeeAssign']);
+        Route::get('/list', [EmployeeAssignController::class, 'indexEmployeeAssign']);
+        Route::get('/{office}', [OfficeController::class, 'contractualEmployee']);
+        Route::post('/store', [EmployeeAssignController::class, 'storeEmployeeAssign']);
+        Route::put('/update/{employeeAssignId}', [EmployeeAssignController::class, 'updateEmployeeAssign']);
+        Route::delete('/delete{employeeAssignId}', [EmployeeAssignController::class, 'deleteEmployeeAssign']);
 
-        // Route::post('/employee', [OfficeController::class, 'getEmployee']);
+        Route::get('/detials/{employeeAssignId}', [EmployeeAssignController::class, 'viewEmployeeAssign']);
 
     });
 
       Route::prefix('re-assign')->group(function () {
         Route::post('/store', [EmployeeReAssignController::class, 'storeEmployeeReAssign']);
-        Route::put('/update', [EmployeeReAssignController::class, 'updateEmployeeReAssign']);
-
-
-
+        Route::put('/update/{employeeReAssignId}', [EmployeeReAssignController::class, 'updateEmployeeReAssign']);
+        Route::put('/return/{employeeReAssignId}', [EmployeeReAssignController::class, 'returnEmployeeReAssign']);
+       Route::get('/{office}', [OfficeController::class, 'getEmployee']);
     });
 
     // office library

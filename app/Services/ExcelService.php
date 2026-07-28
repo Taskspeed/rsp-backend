@@ -1523,4 +1523,331 @@ class ExcelService
             'Content-Disposition' => 'attachment; filename="list_of_applicant_top_ranking.xlsx"',
         ]);
     }
+
+
+    public function applicant($postDateInput)
+        {
+            $templatePath = storage_path('app/template/list_of_qualified_recommended_applicant.xlsx');
+            $reader = IOFactory::createReader('Xlsx');
+            $reader->setIncludeCharts(true);
+            $spreadsheet = $reader->load($templatePath);
+
+            if ($spreadsheet->hasMacros()) {
+                $spreadsheet->setMacrosCode($spreadsheet->getMacrosCode());
+            }
+
+            $templateSheet = $spreadsheet->getSheet(0);
+
+            $postDateRaw = $postDateInput['publication_date'];
+
+            $jobPosts = JobBatchesRsp::whereDate('post_date', $postDateRaw)
+                ->select('id', 'Office', 'Division', 'Section', 'Position', 'SalaryGrade', 'ItemNo', 'post_date', 'end_date')
+                ->get();
+
+            if ($jobPosts->isEmpty()) {
+                return response()->json(['message' => 'No job posts found for this date.'], 404);
+            }
+
+            $usedTitles = [];
+            $templateSheet = $spreadsheet->getSheet(0); // keep reference before cloning
+            $pristineTemplate = clone $templateSheet;   // untouched master copy
+
+            foreach ($jobPosts as $index => $jobPost) {
+
+                $allScores = rating_score::select(
+                    'rating_score.id',
+                    'rating_score.nPersonalInfo_id',
+                    'rating_score.ControlNo',
+                    'rating_score.job_batches_rsp_id',
+                    'rating_score.education_score as education',
+                    'rating_score.experience_score as experience',
+                    'rating_score.training_score as training',
+                    'rating_score.performance_score as performance',
+                    'rating_score.behavioral_score as bei',
+                    'rating_score.grand_total',
+                    'nPersonalInfo.firstname as ext_firstname',
+                    'nPersonalInfo.lastname as ext_lastname',
+                    'xPersonal.Firstname as int_firstname',
+                    'xPersonal.Surname as int_lastname',
+                    'submission.id as submission_id',
+                    'submission.experience_qualification'
+                )
+                    ->leftJoin('nPersonalInfo', 'nPersonalInfo.id', '=', 'rating_score.nPersonalInfo_id')
+                    ->leftJoin('xPersonal', 'xPersonal.ControlNo', '=', 'rating_score.ControlNo')
+                    ->leftJoin('submission', function ($join) {
+                        $join->on('submission.job_batches_rsp_id', '=', 'rating_score.job_batches_rsp_id')
+                            ->where(function ($q) {
+                                $q->on('submission.nPersonalInfo_id', '=', 'rating_score.nPersonalInfo_id')
+                                    ->orOn('submission.ControlNo', '=', 'rating_score.ControlNo');
+                            });
+                    })
+                    ->where('submission.status', 'Qualified')
+                    ->where(function ($query) {
+                        $query->where('submission.application_status', '!=', 'Withdrawn')
+                            ->orWhereNull('submission.application_status');
+                    })
+                    ->where('rating_score.job_batches_rsp_id', $jobPost->id)
+                    ->get();
+
+                $examScores = \App\Models\ApplicantExamScore::whereHas('submission', function ($q) use ($jobPost) {
+                    $q->where('job_batches_rsp_id', $jobPost->id);
+                })
+                    ->get()
+                    ->keyBy('submission_id');
+
+                $scoresByApplicant = $allScores->groupBy(
+                    fn($row) => $row->nPersonalInfo_id ?: 'control_' . $row->ControlNo
+                );
+
+                $applicants = [];
+
+                foreach ($scoresByApplicant as $rows) {
+                    $first = $rows->first();
+
+                    $submissionId = $first->submission_id;
+                    if (!$submissionId && $first->ControlNo) {
+                        $submissionId = \App\Models\Submission::where('job_batches_rsp_id', $jobPost->id)
+                            ->where('ControlNo', $first->ControlNo)
+                            ->value('id');
+                    }
+
+                    $examRecord     = $submissionId ? ($examScores[$submissionId] ?? null) : null;
+                    $examPercentage = $examRecord ? (float) $examRecord->exam_percentage : null;
+
+                    $scoresArray = $rows->map(fn($row) => [
+                        'education'       => (float) $row->education,
+                        'experience'      => (float) $row->experience,
+                        'training'        => (float) $row->training,
+                        'performance'     => (float) $row->performance,
+                        'bei'             => $row->bei,
+                        'exam_percentage' => $examPercentage,
+                    ])->toArray();
+
+                    $computed = RatingService::computeFinalScore($scoresArray);
+
+                    $office          = null;
+                    $designation     = null;
+                    $lengthOfService = null;
+                    $status          = null;
+                    $sg              = null;
+
+                    $applicant_status = $first->ControlNo ? 'Internal' : ($first->nPersonalInfo_id ? 'Outsider' : null);
+
+                    if (!$first->nPersonalInfo_id && $first->ControlNo) {
+
+                        // ── Internal: pull current service from xService ──────────────────
+                        $current_service = xService::select('ControlNo', 'ToDate', 'FromDate', 'Office', 'Designation', 'Status', 'Grades')
+                            ->where('ControlNo', $first->ControlNo)
+                            ->orderByDesc('ToDate')
+                            ->orderByDesc('FromDate')
+                            ->first();
+
+                        $office      = $current_service->Office ?? null;
+                        $designation = $current_service->Designation ?? null;
+                        $status      = $current_service->Status ?? null;
+                        $sg          = $current_service->Grades ?? null;
+
+                        if ($designation) {
+                            $designation = trim(preg_replace('/\s*\(.*?\)\s*/', '', $designation));
+                        }
+
+                        $xservice = xService::select('FromDate', 'ToDate')
+                            ->where('ControlNo', $first->ControlNo)
+                            ->get();
+
+                        $totalDays = 0;
+                        $today     = Carbon::now();
+
+                        foreach ($xservice as $service) {
+                            $from = Carbon::parse($service->FromDate);
+                            $to   = Carbon::parse($service->ToDate ?? now());
+
+                            if ($to->isFuture())   $to   = $today;
+                            if ($from->isFuture()) continue;
+
+                            $totalDays += $from->diffInDays($to);
+                        }
+
+                        $years  = intdiv($totalDays, 365);
+                        $remain = $totalDays % 365;
+                        $months = intdiv($remain, 30);
+                        $days   = $remain % 30;
+
+                        $lengthOfService = "{$years} years, {$months} months, {$days} days";
+
+                    } elseif ($first->nPersonalInfo_id) {
+
+                        // ── Outsider: only show info if a CURRENT/PRESENT (or same-day-as-created_at) qualified work experience exists ──
+                        $qualifiedIds = [];
+                        if ($first->experience_qualification) {
+                            $decoded = json_decode($first->experience_qualification, true);
+                            if (!is_array($decoded)) {
+                                $decoded = array_filter(array_map(
+                                    'trim',
+                                    explode(',', trim($first->experience_qualification, '[] '))
+                                ));
+                            }
+                            $qualifiedIds = $decoded ?: [];
+                        }
+
+                        if (!empty($qualifiedIds)) {
+                            $workExperiences = DB::table('nWorkExperience')
+                                ->whereIn('id', $qualifiedIds)
+                                ->where('nPersonalInfo_id', $first->nPersonalInfo_id)
+                                ->get();
+
+                            // ── Find entries treated as CURRENT: text says "current"/"present",
+                            //    OR work_date_to (d/m/Y) matches the record's own created_at date ──
+                            $currentEntries = $workExperiences->filter(function ($w) {
+                                $toRaw = strtolower(trim($w->work_date_to ?? ''));
+
+                                if (str_contains($toRaw, 'current') || str_contains($toRaw, 'present')) {
+                                    return true;
+                                }
+
+                                if (empty($w->work_date_to) || empty($w->created_at)) {
+                                    return false;
+                                }
+
+                                try {
+                                    $workToDate = Carbon::createFromFormat('d/m/Y', trim($w->work_date_to))->format('Y-m-d');
+                                } catch (\Exception $e) {
+                                    return false; // not a parseable date and didn't match text current/present
+                                }
+
+                                try {
+                                    $createdDate = Carbon::parse($w->created_at)->format('Y-m-d');
+                                } catch (\Exception $e) {
+                                    return false;
+                                }
+
+                                return $workToDate === $createdDate;
+                            });
+
+                            // No fallback: if none are current, $current_work stays null
+                            $current_work = $currentEntries->isNotEmpty()
+                                ? $currentEntries->sortByDesc('work_date_from')->first()
+                                : null;
+
+                            if ($current_work) {
+                                $office      = $current_work->department      ?? null;
+                                $designation = $current_work->position_title  ?? null;
+                                $sg          = $current_work->salary_grade     ?? null;
+                                $status      = $current_work->status_of_appointment ?? null;
+
+                                try {
+                                    $from = Carbon::createFromFormat('d/m/Y', trim($current_work->work_date_from));
+                                } catch (\Exception $e) {
+                                    $from = Carbon::parse($current_work->work_date_from);
+                                }
+
+                                $to = Carbon::now();
+
+                                $totalDays = $from->isFuture() ? 0 : $from->diffInDays($to);
+
+                                $years  = intdiv($totalDays, 365);
+                                $remain = $totalDays % 365;
+                                $months = intdiv($remain, 30);
+                                $days   = $remain % 30;
+
+                                $lengthOfService = "{$years} years, {$months} months, {$days} days";
+                            }
+                        }
+                    }
+
+                    $applicants[] = [
+                        'nPersonalInfo_id' => $first->nPersonalInfo_id,
+                        'ControlNo'        => $first->ControlNo,
+                        'firstname'        => $first->nPersonalInfo_id ? $first->ext_firstname : $first->int_firstname,
+                        'lastname'         => $first->nPersonalInfo_id ? $first->ext_lastname  : $first->int_lastname,
+                        'office'           => $office,
+                        'position'         => $designation,
+                        'lenghtOfservice'  => $lengthOfService,
+                        'status'           => $status,
+                        'sg'               => $sg,
+                        'applicant_status' => $applicant_status,
+                    ] + $computed;
+                }
+
+                $topApplicants = collect(RatingService::addRanking($applicants))
+                    ->sortBy('rank')
+                    ->values();
+
+                // --- sheet setup: 1 sheet per job post, titled Position - ItemNo - page ---
+                $pageNo = $index + 1;
+                $rawTitle = trim(($jobPost->Position ?: 'Position') . ' - Item: ' . ($jobPost->ItemNo ?: 'N/A') . ' - Page: ' . $pageNo);
+                $safeTitle = preg_replace('/[\[\]\*\/\\\\\?\:]/', '', $rawTitle);
+                $safeTitle = mb_substr($safeTitle, 0, 31);
+
+                $finalTitle = $safeTitle;
+                $suffix = 1;
+                while (in_array($finalTitle, $usedTitles)) {
+                    $suffixStr  = "($suffix)";
+                    $finalTitle = mb_substr($safeTitle, 0, 31 - mb_strlen($suffixStr)) . $suffixStr;
+                    $suffix++;
+                }
+                $usedTitles[] = $finalTitle;
+
+                if ($index === 0) {
+                    $sheet = $templateSheet;
+                    $sheet->setTitle($finalTitle);
+                } else {
+                    $sheet = clone $pristineTemplate;
+                    $sheet->setTitle($finalTitle);
+                    $spreadsheet->addSheet($sheet, $index);
+                }
+
+                $postDateFmt     = Carbon::parse($jobPost->post_date)->format('F d, Y');
+                $endDateFmt      = Carbon::parse($jobPost->end_date)->format('F d, Y');
+                $publicationDate = "PUBLICATION DATE: {$postDateFmt} - {$endDateFmt}";
+
+                $sheet->setCellValue('A3', $publicationDate);
+
+                $sheet->setCellValue('B5', $jobPost->Office);
+                $sheet->setCellValue('A6', 'Division/Section');
+                $sheet->setCellValue('B6', $jobPost->Division ?? $jobPost->Section);
+
+                $sheet->setCellValue('A7', 'Position');
+                $sheet->setCellValue('B7', $jobPost->Position);
+
+                $sheet->setCellValue('A8', 'Salary Grade');
+                $sheet->setCellValue('B8', $jobPost->SalaryGrade);
+
+                $sheet->setCellValue('A9', 'Plantilla Item No');
+                $sheet->setCellValue('B9', $jobPost->ItemNo);
+
+                $extraRows = $topApplicants->count() - 5;
+                if ($extraRows > 0) {
+                    $sheet->insertNewRowBefore(23, $extraRows);
+                }
+
+                $row = 11;
+                foreach ($topApplicants as $applicant) {
+                    $sheet->setCellValue("A{$row}", $applicant['rank'] ?? '');
+                    $sheet->setCellValue("B{$row}", trim("{$applicant['firstname']} {$applicant['lastname']}"));
+                    $sheet->setCellValue("C{$row}", implode("\n", [
+                        $applicant['office'] ?? '',
+                        $applicant['position'] ?? '',
+                        $applicant['sg'] ?? '',
+                        $applicant['status'] ?? '',
+                        $applicant['lenghtOfservice'] ?? '',
+                        $applicant['applicant_status'] ?? '',
+                    ]));
+                    $sheet->getStyle("C{$row}")->getAlignment()->setWrapText(true);
+
+                    $row++;
+                }
+            }
+
+            $spreadsheet->setActiveSheetIndex(0);
+
+            $writer = IOFactory::createWriter($spreadsheet, 'Xlsx');
+
+            return new StreamedResponse(function () use ($writer) {
+                $writer->save('php://output');
+            }, 200, [
+                'Content-Type'        => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'Content-Disposition' => 'attachment; filename="list_of_qualified_recommended_applicant.xlsx"',
+            ]);
+        }
 }

@@ -341,6 +341,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/internal/applicant/designation', [ReportController::class, 'internalApplicantDesignation']); // applincat internal with designation
         Route::post('/internal/applicant/service', [ReportController::class, 'internalApplicantService']); // applincat internal with designation
         Route::post('/top/ranking/applicant', [ReportController::class, 'topRakingApplicantExcel']); // applincat internal with designation
+        Route::post('/list/qualified/recommend/applicant', [ReportController::class, 'recommendedApplicant']); // excel with particular
+
 
     });
 
@@ -449,9 +451,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/list', [EmployeeAssignController::class, 'indexEmployeeAssign']);
         Route::get('/{office}', [OfficeController::class, 'contractualEmployee']);
         Route::post('/store', [EmployeeAssignController::class, 'storeEmployeeAssign']);
-        Route::put('/update/{employeeAssignId}', [EmployeeAssignController::class, 'updateEmployeeAssign']);
-        Route::delete('/delete{employeeAssignId}', [EmployeeAssignController::class, 'deleteEmployeeAssign']);
-
+        Route::put('/update/{controlNo}', [EmployeeAssignController::class, 'updateEmployeeAssign']);
+        Route::delete('/delete/{controlNo}', [EmployeeAssignController::class, 'deleteEmployeeAssign']);
         Route::get('/detials/{employeeAssignId}', [EmployeeAssignController::class, 'viewEmployeeAssign']);
 
     });
@@ -460,11 +461,14 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/store', [EmployeeReAssignController::class, 'storeEmployeeReAssign']);
         Route::put('/update/{employeeReAssignId}', [EmployeeReAssignController::class, 'updateEmployeeReAssign']);
         Route::put('/return/{employeeReAssignId}', [EmployeeReAssignController::class, 'returnEmployeeReAssign']);
+        Route::get('with/{office}', [OfficeController::class, 'employeeWithReAssign']);
+
        Route::get('/{office}', [OfficeController::class, 'getEmployee']);
     });
 
     // office library
     Route::prefix('office')->group(function () {
+        Route::get('employee/{office}', [OfficeController::class, 'getEmployeeActive']);
         Route::get('structure/{office}', [OfficeController::class, 'officeStructure']);
         Route::get('/index', [OfficeController::class, 'index']);
         Route::post('/store', [OfficeController::class, 'store']);

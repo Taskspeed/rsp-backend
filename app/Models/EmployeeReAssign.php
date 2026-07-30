@@ -20,7 +20,9 @@ class EmployeeReAssign extends Model
         'section',
         'unit',
         're_assign_date',
-        'active'
+        'active',
+        'position',
+        'name'
     ];
 
   

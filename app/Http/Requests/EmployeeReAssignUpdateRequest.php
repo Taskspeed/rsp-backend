@@ -30,7 +30,8 @@ class EmployeeReAssignUpdateRequest extends FormRequest
         'section' => 'nullable|string',
         'unit' => 'nullable|string',
         're_assign_date' => 'nullable|date',
-        'active' => 'required|boolean',
+        'active' => 'nullable|boolean',
+
         ];
     }
 }

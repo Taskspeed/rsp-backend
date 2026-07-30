@@ -26,8 +26,14 @@ class EmployeeAssignStoreRequest extends FormRequest
            'office' => 'nullable|string',
            'office2' => 'nullable|string',
            'group' => 'nullable|string',
-            'division' => 'nullable|string',
-            'section' => 'nullable|string',
+           'division' => 'nullable|string',
+           'section' => 'nullable|string',
+           'unit' => 'nullable|string',
+           'name' => 'required|string',
+            'position' => 'required|string',
+
+
+    
             'unit' => 'nullable|string',
         ];
     }

@@ -30,6 +30,8 @@ class EmployeeReAssignStoreRequest extends FormRequest
         'section' => 'nullable|string',
         'unit' => 'nullable|string',
         're_assign_date' => 'nullable|date',
+        'name' => 'nullable|string',
+        'position' => 'nullable|string',
         // 'active'
         ];
     }

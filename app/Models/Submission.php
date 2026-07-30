@@ -64,10 +64,10 @@ class Submission extends Model
     {
         return $this->belongsTo(nPersonal_info::class, 'nPersonalInfo_id');
     }
-public function personal_declarations()
-{
-    return $this->hasOne(Personal_declarations::class, 'nPersonalInfo_id', 'nPersonalInfo_id');
-}
+    public function personal_declarations()
+    {
+        return $this->hasOne(Personal_declarations::class, 'nPersonalInfo_id', 'nPersonalInfo_id');
+    }
     public function ControlNo() // external applicants
     {
         return $this->belongsTo(xPersonal::class, 'ControlNo', 'ControlNo');
@@ -82,7 +82,7 @@ public function personal_declarations()
     {
         return $this->belongsTo(xPersonalAddt::class, 'ControlNo', 'ControlNo');
     }
-      public function xPersonalDiversity() // external applicants
+    public function xPersonalDiversity() // external applicants
     {
         return $this->belongsTo(xPersonalDiversity::class, 'ControlNo', 'controlno');
     }
@@ -195,12 +195,12 @@ public function personal_declarations()
     //     return  DB::table('xExperience')->whereIn('ID', $this->experience_qualification)->get(); //Work_experience
     //     // return  DB::table('xService')->whereIn('PMID', $this->experience_qualification)->get(); //Work_experience
     // }
-    public function getExperienceRecordsInternal($controlNo , array $experienceQualification = [])
+    public function getExperienceRecordsInternal($controlNo, array $experienceQualification = [])
     {
         // ✅ Fetch from xService
         $serviceRecords = DB::table('xService')
             ->where('ControlNo', $controlNo)
-            ->select('PMID as id', 'ControlNo', 'FromDate as WFrom', 'ToDate as WTo','Designation as WPosition','Office as WCompany')
+            ->select('PMID as id', 'ControlNo', 'FromDate as WFrom', 'ToDate as WTo', 'Designation as WPosition', 'Office as WCompany')
             ->orderBy('FromDate')
             ->get();
 
@@ -252,23 +252,23 @@ public function personal_declarations()
         //         return $record;
         //     });
         $experienceRecords = DB::table('xExperience')
-    ->whereIn('ID', $experienceQualification)
-    ->get()
-    ->map(function ($record) {
-        $record->id = $record->ID; // ← add this para consistent ang key
+            ->whereIn('ID', $experienceQualification)
+            ->get()
+            ->map(function ($record) {
+                $record->id = $record->ID; // ← add this para consistent ang key
 
-        $record->WFrom = ($record->WFrom && strtoupper(trim($record->WFrom)) !== 'CURRENT')
-            ? \Carbon\Carbon::parse($record->WFrom)->format('m/d/Y')
-            : null;
+                $record->WFrom = ($record->WFrom && strtoupper(trim($record->WFrom)) !== 'CURRENT')
+                    ? \Carbon\Carbon::parse($record->WFrom)->format('m/d/Y')
+                    : null;
 
-        $wTo = strtoupper(trim($record->WTo ?? ''));
-        $record->WTo = ($wTo === 'CURRENT' || $wTo === '')
-            ? \Carbon\Carbon::now()->format('m/d/Y')
-            : \Carbon\Carbon::parse($record->WTo)->format('m/d/Y');
+                $wTo = strtoupper(trim($record->WTo ?? ''));
+                $record->WTo = ($wTo === 'CURRENT' || $wTo === '')
+                    ? \Carbon\Carbon::now()->format('m/d/Y')
+                    : \Carbon\Carbon::parse($record->WTo)->format('m/d/Y');
 
-        $record->experience_status = 'EXPERIENCE';
-        return $record;
-    });
+                $record->experience_status = 'EXPERIENCE';
+                return $record;
+            });
         // ✅ Merge both collections into one
         return $serviceRecords->merge($experienceRecords);
     }
@@ -294,6 +294,7 @@ public function personal_declarations()
         return DB::table('xCivilService')->whereIn('PMID', $this->eligibility_qualification)->get(); //Civil_service_eligibity
     }
 
+    // exam score of the applicant
     public function applicantExamScore()
     {
         return $this->hasOne(ApplicantExamScore::class, 'submission_id', 'id');

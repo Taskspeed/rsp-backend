@@ -9,59 +9,6 @@ use Illuminate\Support\Facades\Cache;
 
 class UsersController extends Controller
 {
-
-    // // this is for admin user
-    // public function getAuthenticatedUser(Request $request)
-    // {
-    //     // Get the authenticated user with relationships in a single query
-    //     $user = $request->user()->load(['rspControl']);
-
-
-
-
-
-    //     if (!$user) {
-    //         return response()->json(['message' => 'Token expired or invalid'], 401);
-    //     }
-
-    //     // Select only needed fields
-    //     $userData = [
-    //         'id' => $user->id,
-    //         'name' => $user->name,
-    //         'username' => $user->username,
-    //         'position' => $user->position,
-    //         'active' => $user->active,
-    //         'permissions' => [
-    //             'viewDashboardstat' => optional($user->rspControl)->viewDashboardstat ?? false,
-    //             'viewPlantillaAccess' => optional($user->rspControl)->viewPlantillaAccess ?? false,
-
-    //             'modifyPlantillaAccess' => optional($user->rspControl)->modifyPlantillaAccess ?? false,
-    //             'viewJobpostAccess' => optional($user->rspControl)->viewJobpostAccess ?? false,
-
-    //             'modifyJobpostAccess' => optional($user->rspControl)->modifyJobpostAccess ?? false,
-
-    //             'viewActivityLogs' => optional($user->rspControl)->viewActivityLogs ?? false,
-
-    //             'userManagement' => optional($user->rspControl)->userManagement ?? false,
-    //             'viewRater' => optional($user->rspControl)->viewRater ?? false,
-
-    //             'modifyRater' => optional($user->rspControl)->modifyRater ?? false,
-
-    //             'viewCriteria' => optional($user->rspControl)->viewCriteria?? false,
-
-    //             'modifyCriteria' => optional($user->rspControl)->modifyCriteria ?? false,
-    //             'viewReport' => optional($user->rspControl)->viewReport ?? false,
-
-    //         ],
-    //     ];
-
-    //     return response()->json([
-    //         'status' => true,
-    //         'message' => 'Authenticated user retrieved successfully',
-    //         'data' => $userData
-    //     ]);
-    // }
-
     // this is for admin user
     public function getAuthenticatedUser(Request $request)
     {
@@ -83,44 +30,36 @@ class UsersController extends Controller
             'permissions' => [
                 'viewDashboardstat' => optional($user->rspControl)->viewDashboardstat ?? false,
                 'viewPlantillaAccess' => optional($user->rspControl)->viewPlantillaAccess ?? false,
-
                 'modifyPlantillaAccess' => optional($user->rspControl)->modifyPlantillaAccess ?? false,
                 'viewJobpostAccess' => optional($user->rspControl)->viewJobpostAccess ?? false,
-
                 'modifyJobpostAccess' => optional($user->rspControl)->modifyJobpostAccess ?? false,
-
                 'viewActivityLogs' => optional($user->rspControl)->viewActivityLogs ?? false,
-
                 'userManagement' => optional($user->rspControl)->userManagement ?? false,
                 'viewRater' => optional($user->rspControl)->viewRater ?? false,
-
                 'modifyRater' => optional($user->rspControl)->modifyRater ?? false,
-
                 'viewCriteria' => optional($user->rspControl)->viewCriteria ?? false,
-
                 'modifyCriteria' => optional($user->rspControl)->modifyCriteria ?? false,
                 'viewReport' => optional($user->rspControl)->viewReport ?? false,
-
                 'viewSchedule' => optional($user->rspControl)->viewSchedule ?? false,
                 'modifySchedule' => optional($user->rspControl)->modifySchedule ?? false,
                 'viewExam' => optional($user->rspControl)->viewExam ?? false,
                 'modifyExam' => optional($user->rspControl)->modifyExam ?? false,
-
                 'requestPublication' => optional($user->rspControl)->requestPublication ?? false,
                 'reportPlantillaAccess' => optional($user->rspControl)->reportPlantillaAccess ?? false,
                 'viewApplicantAccess' => optional($user->rspControl)->viewApplicantAccess ?? false,
                 'modifyApplicantAccess' => optional($user->rspControl)->modifyApplicantAccess ?? false,
                 'reportApplicantAccess' => optional($user->rspControl)->reportApplicantAccess ?? false,
-
                 'viewLibraryAccess' => optional($user->rspControl)->viewLibraryAccess ?? false,
                 'modifyLibraryAccess' => optional($user->rspControl)->modifyLibraryAccess ?? false,
-
                 'reportRaterManagementAccess' => optional($user->rspControl)->reportRaterManagementAccess ?? false,
-
-             'viewAdvanceAppointmentAccess' => optional($user->rspControl)->viewAdvanceAppointmentAccess ?? false,
-              'modifyAdvanceAppointmentAccess' => optional($user->rspControl)->modifyAdvanceAppointmentAccess ?? false,
-               'reportAdvanceAppointmentAccess' => optional($user->rspControl)->reportAdvanceAppointmentAccess ?? false,
-
+                'viewAdvanceAppointmentAccess' => optional($user->rspControl)->viewAdvanceAppointmentAccess ?? false,
+                'modifyAdvanceAppointmentAccess' => optional($user->rspControl)->modifyAdvanceAppointmentAccess ?? false,
+                'reportAdvanceAppointmentAccess' => optional($user->rspControl)->reportAdvanceAppointmentAccess ?? false,
+                
+                // NEW PLACEMENT ACCESS PERMISSIONS
+                'viewPlacementAccess' => optional($user->rspControl)->viewPlacementAccess ?? false,
+                'modifyPlacementAccess' => optional($user->rspControl)->modifyPlacementAccess ?? false,
+                'reportPlacementAccess' => optional($user->rspControl)->reportPlacementAccess ?? false,
             ],
         ];
 
@@ -130,7 +69,6 @@ class UsersController extends Controller
             'data' => $userData
         ]);
     }
-
 
     // this is for rater
     public function getAuthenticatedrater(Request $request)
@@ -155,7 +93,7 @@ class UsersController extends Controller
             'enable' => $user->enable,
             'rspControl' => $user->rspControl,
 
-            // ⭐ ADDED STATISTICS
+            // STATISTICS
             'assigned_jobs_count' => $user->total_assigned,
             'completed_jobs_count' => $user->total_completed,
             'pending_jobs_count' => $user->total_pending,
@@ -164,7 +102,7 @@ class UsersController extends Controller
             // change password
             'must_change_password' => $user->must_change_password,
 
-            // ⭐ Optional: Include job list assigned to the rater
+            // Optional: Include job list assigned to the rater
             'assigned_jobs' => $user->job_batches_rsp->map(function ($job) {
                 return [
                     'id' => $job->id,

@@ -46,7 +46,12 @@ class UserRspControl extends Model
         'reportRaterManagementAccess',
         'viewAdvanceAppointmentAccess',
          'modifyAdvanceAppointmentAccess',
-         'reportAdvanceAppointmentAccess'
+         'reportAdvanceAppointmentAccess',
+
+         // NEW FIELDS
+        'viewPlacementAccess',
+        'modifyPlacementAccess',
+        'reportPlacementAccess'
     ];
 
     // In UserRspControl.php

@@ -311,9 +311,13 @@ class AuthController extends Controller
                 'permissions.viewLibraryAccess' => 'boolean',
                 'permissions.modifyLibraryAccess' => 'boolean',
                 'permissions.reportRaterManagementAccess' => 'boolean',
-                    'permissions.viewAdvanceAppointmentAccess' => 'boolean',
-                        'permissions.modifyAdvanceAppointmentAccess' => 'boolean',
-                            'permissions.reportAdvanceAppointmentAccess' => 'boolean',
+                'permissions.viewAdvanceAppointmentAccess' => 'boolean',
+                'permissions.modifyAdvanceAppointmentAccess' => 'boolean',
+                'permissions.reportAdvanceAppointmentAccess' => 'boolean',
+                'permissions.viewPlacementAccess' => 'boolean',
+                'permissions.modifyPlacementAccess' => 'boolean',
+                'permissions.reportPlacementAccess' => 'boolean',
+                
 
 
 
@@ -381,6 +385,9 @@ class AuthController extends Controller
   'viewAdvanceAppointmentAccess' => $request->input('permissions.viewAdvanceAppointmentAccess', false),
                     'modifyAdvanceAppointmentAccess' => $request->input('permissions.modifyAdvanceAppointmentAccess', false),
                     'reportAdvanceAppointmentAccess' => $request->input('permissions.reportAdvanceAppointmentAccess', false),
+                    'viewPlacementAccess' => $request->input('permissions.viewPlacementAccess', false),
+                    'modifyPlacementAccess' => $request->input('permissions.modifyPlacementAccess', false),
+                    'reportPlacementAccess' => $request->input('permissions.reportPlacementAccess', false),
 
                     ]);
                 } else {
@@ -418,7 +425,9 @@ class AuthController extends Controller
   'viewAdvanceAppointmentAccess' => $request->input('permissions.viewAdvanceAppointmentAccess', false),
                     'modifyAdvanceAppointmentAccess' => $request->input('permissions.modifyAdvanceAppointmentAccess', false),
                     'reportAdvanceAppointmentAccess' => $request->input('permissions.reportAdvanceAppointmentAccess', false),
-
+                     'viewPlacementAccess' => $request->input('permissions.viewPlacementAccess', false),
+                    'modifyPlacementAccess' => $request->input('permissions.modifyPlacementAccess', false),
+                    'reportPlacementAccess' => $request->input('permissions.reportPlacementAccess', false),
                     ]);
                 }
             }

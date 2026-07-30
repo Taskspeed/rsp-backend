@@ -10,6 +10,7 @@ use App\Models\SPMS\Employee;
 use App\Models\vwActive;
 use App\Traits\ApiResponseTrait;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class EmployeeAssignController extends Controller
 {
@@ -76,35 +77,45 @@ class EmployeeAssignController extends Controller
     }
 
 
-   public function updateEmployeeAssign(EmployeeAssignUpdateRequest $request, $controlNo)
-{
-    $validatedData = $request->validated();
+    public function updateEmployeeAssign(EmployeeAssignUpdateRequest $request, $controlNo)
+    {
+        $validatedData = $request->validated();
 
-    $findEmployee = EmployeeAssign::where('control_no', $controlNo)->first();
+        $findEmployee = EmployeeAssign::where('control_no', $controlNo)->first();
 
-    if (!$findEmployee) {
-        return $this->errorMessage('Employee controlNo no record', 409);
+        if (!$findEmployee) {
+            return $this->errorMessage('Employee controlNo no record', 409);
+        }
+
+        $findEmployee->update($validatedData);
+
+        return $this->successMessage($findEmployee, 'assign employee success updated', 200);
     }
 
-    $findEmployee->update($validatedData);
+    public function deleteEmployeeAssign($controlNo)
+    {
+        $findEmployee = EmployeeAssign::where('control_no', $controlNo)->first();
 
-    return $this->successMessage($findEmployee, 'assign employee success updated', 200);
-}
+        if (!$findEmployee) {
+            return $this->errorMessage('Employee controlNo no record', 404);
+        }
 
-public function deleteEmployeeAssign($controlNo)
-{
-    $findEmployee = EmployeeAssign::where('control_no', $controlNo)->first();
+        $findEmployee->delete();
 
-    if (!$findEmployee) {
-        return $this->errorMessage('Employee controlNo no record', 409);
+        // DB::transaction(function () use ($findEmployee, $controlNo) {
+        //     // delete also on spms employee table
+        //     $spmsEmployee = Employee::where('ControlNo', $controlNo)->first();
+        //     if ($spmsEmployee) {
+        //         $spmsEmployee->delete();
+        //     }
+
+      
+        // });
+
+        return $this->successMessage($findEmployee, 'employee assign remove success', 200);
     }
 
-    $findEmployee->delete();
 
-    return $this->successMessage($findEmployee, 'employee assign remove success', 200);
-}
-
-   
 
     // view records Assignment
     public function viewEmployeeAssign(string $controlNo)

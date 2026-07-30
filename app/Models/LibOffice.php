@@ -15,6 +15,13 @@ class LibOffice extends Model
     ];
 
     protected $casts = [
-        'officeId' => 'integer'
+        'officeId' => 'integer',
+    
     ];
+
+
+    public function officeStructureOutside()
+    {
+        return $this->hasMany(OfficeStructureOutside::class, 'lib_office_id', 'id');
+    }
 }

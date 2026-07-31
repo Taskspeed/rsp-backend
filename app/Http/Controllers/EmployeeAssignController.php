@@ -8,6 +8,7 @@ use App\Http\Requests\EmployeeAssignUpdateRequest;
 use App\Models\EmployeeAssign;
 use App\Models\SPMS\Employee;
 use App\Models\vwActive;
+use App\Models\xPersonal;
 use App\Traits\ApiResponseTrait;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -120,27 +121,19 @@ class EmployeeAssignController extends Controller
     // view records Assignment
     public function viewEmployeeAssign(string $controlNo)
     {
-        $findEmployee = vwActive::with(['employeeReAssign', 'vwActive', 'xPersonal'])
-            ->where($controlNo)->get();
+        $findEmployee = xPersonal::with(['employeeReAssign', 'vwActive'])
+            ->where('ControlNo', $controlNo)->first();
 
         if (!$findEmployee) {
             return $this->errorMessage('Employee controlNo no record', 409);
         }
 
         $employee = [
-            'employee_assign_id' => $findEmployee->id,
-            'control_no'         => $findEmployee->control_no,
-            'Surname'            => $findEmployee->xPersonal->Surname ?? null,
-            'Firstname'          => $findEmployee->xPersonal->Firstname ?? null,
+  
+            'control_no'         => $findEmployee->ControlNo,
+            'Surname'            => $findEmployee->Surname ?? null,
+            'Firstname'          => $findEmployee->Firstname ?? null,
             'designation'        => $findEmployee->vwActive->Designation ?? null,
-            'status'             => $findEmployee->vwActive->Status ?? null,
-            'office'             => $findEmployee->office,
-            'office2'            => $findEmployee->office2,
-            'group'              => $findEmployee->group,
-            'division'           => $findEmployee->division,
-            'section'            => $findEmployee->section,
-            'unit'               => $findEmployee->unit,
-            'created_at'         => $findEmployee->created_at,
             're_assignment_history'  => $findEmployee->employeeReAssign->map(function ($reAssign) {
                 return [
                     'employee_reassign_id' => $reAssign->id,
@@ -154,7 +147,6 @@ class EmployeeAssignController extends Controller
                     're_assign_date'       => $reAssign->re_assign_date,
                     'active'               => $reAssign->active,
                     'created_at'           => $reAssign->created_at,
-                    // 'updated_at'           => $reAssign->updated_at,
                 ];
             }),
         ];

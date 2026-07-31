@@ -475,6 +475,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/delete/{officeId}', [OfficeController::class, 'destroy']);
         Route::get('view/{officeId}', [OfficeController::class, 'view']);
         Route::put('/update/structure/{structureId}', [OfficeController::class, 'updateStructure']);
+        Route::post('/structure/store', [OfficeController::class, 'structureStore']);
+        Route::delete('/structure/delete/{structureId}', [OfficeController::class, 'structureDelete']);
 
     });
 

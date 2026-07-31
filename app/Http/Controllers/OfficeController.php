@@ -14,6 +14,7 @@ use App\Models\vwplantillastructure;
 use App\Services\OfficeService;
 use App\Traits\ApiResponseTrait;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class OfficeController extends Controller
 {
@@ -92,6 +93,7 @@ class OfficeController extends Controller
 
 
     // fetch
+    // fetch
     public function index()
     {
         $data = LibOffice::with('officeStructureOutside')
@@ -114,51 +116,34 @@ class OfficeController extends Controller
             return $this->successMessage($data, 'no record found', 200);
         }
 
+        // GET DISTINCT OFFICE NAMES THAT ALREADY EXIST IN vwplantillastructure
+        $officePlantilla = vwplantillastructure::select('office')
+            ->whereIn('office', $data->pluck('office_name'))
+            ->pluck('office')
+            ->unique()
+            ->values();
+
+        // ATTACH TRUE/FALSE FLAG PER OFFICE
+        $data = $data->map(function ($item) use ($officePlantilla) {
+            // FALSE if it already exists in plantilla, TRUE if it doesn't
+            $item->structure = !$officePlantilla->contains($item->office_name);
+            return $item;
+        });
+
         return $this->successMessage($data, 'success fetch', 200);
     }
 
     // store 
+    // store 
     public function store(Request $request)
     {
         $validatedData = $request->validate([
-            'office_name' => 'required|string',
-            'office2' => 'nullable|string',
-            'group' => 'nullable|string',
-            'division' => 'nullable|string',
-            'section' => 'nullable|string',
-            'unit' => 'nullable|string',
+            'office_name' => 'required|string|unique:lib_offices,office_name'
         ]);
 
-        $result = LibOffice::updateOrCreate(
-            ['office_name' => $validatedData['office_name']],
-        );
+        $result = LibOffice::create($validatedData);
 
-        // CHECK IF THIS OFFICE ALREADY HAS A STRUCTURE IN vwplantillastructure
-        $existsInPlantilla = vwplantillastructure::where('office', $validatedData['office_name'])->exists();
-
-        $structureFields = [
-            'office2' => $validatedData['office2'] ?? null,
-            'group' => $validatedData['group'] ?? null,
-            'division' => $validatedData['division'] ?? null,
-            'section' => $validatedData['section'] ?? null,
-            'unit' => $validatedData['unit'] ?? null,
-        ];
-
-        $officeStructureOutside = null;
-
-        // only create if office is NOT already in vwplantillastructure
-        // AND at least one structure field has a real value
-        if (!$existsInPlantilla && array_filter($structureFields, fn($value) => !is_null($value) && $value !== '')) {
-            $officeStructureOutside = OfficeStructureOutside::create(array_merge(
-                [
-                    'lib_office_id' => $result->id,
-                    'office' => $validatedData['office_name'] ?? null,
-                ],
-                $structureFields
-            ));
-        }
-
-        return $this->successMessage([$result, $officeStructureOutside], 'success created', 200);
+        return $this->successMessage($result, 'success created', 200);
     }
 
     // update
@@ -223,5 +208,60 @@ class OfficeController extends Controller
         $structure->update($validatedData);
 
         return $this->successMessage($structure, 'success updated', 200);
+    }
+
+
+    // structure store 
+
+
+    // structure store 
+    public function structureStore(Request $request)
+    {
+        $validatedData = $request->validate([
+            'lib_office_id' => 'required|exists:lib_offices,id',
+            'office2' => 'nullable|string',
+            'group' => 'nullable|string',
+            'division' => 'nullable|string',
+            'section' => 'nullable|string',
+            'unit' => 'nullable|string',
+        ]);
+
+        $libOffice = LibOffice::find($validatedData['lib_office_id']);
+
+        if (!$libOffice) {
+            return $this->errorMessage('Office not found.', 404);
+        }
+
+
+        $officeName = $libOffice->office_name;
+
+        $existsInPlantilla = vwplantillastructure::where('office', $officeName)->exists();
+
+
+
+        if ($existsInPlantilla) {
+            return $this->errorMessage('This office already has a structure. No need to add.', 400);
+        }
+
+        $validatedData['office'] = $officeName;
+
+        $officeStructureOutside = OfficeStructureOutside::create($validatedData);
+
+
+        return $this->successMessage($officeStructureOutside, 'success created', 200);
+    }
+
+    public function structureDelete(int $structureId)
+    {
+
+        $structure = OfficeStructureOutside::find($structureId);
+
+        if (!$structure) {
+            return $this->errorMessage('Structure not found.', 404);
+        }
+
+        $structure->delete();
+
+        return $this->successMessage($structure, 'deleted success', 200);
     }
 }

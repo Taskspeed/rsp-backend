@@ -453,7 +453,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/store', [EmployeeAssignController::class, 'storeEmployeeAssign']);
         Route::put('/update/{controlNo}', [EmployeeAssignController::class, 'updateEmployeeAssign']);
         Route::delete('/delete/{controlNo}', [EmployeeAssignController::class, 'deleteEmployeeAssign']);
-        Route::get('/detials/{employeeAssignId}', [EmployeeAssignController::class, 'viewEmployeeAssign']);
+        Route::get('/history/{controlNo}', [EmployeeAssignController::class, 'viewEmployeeAssign']);
 
     });
 

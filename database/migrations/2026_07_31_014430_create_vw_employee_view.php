@@ -7,6 +7,8 @@ return new class extends Migration
 {
     public function up(): void
     {
+        DB::statement('DROP VIEW IF EXISTS vwEmployee');
+
         DB::statement("
             CREATE VIEW vwEmployee AS
             -- Source 1: mula sa EmployeeAssign table
@@ -24,10 +26,10 @@ return new class extends Migration
                 ra.active                                AS active,
                 act.Status                               AS status,
                 act.Grades                               AS grades,
-                'Employee'                                AS rank,
-                'Employee'                                AS job_title,
-                CAST(NULL AS VARCHAR(50))                 AS suffix,
-                CAST(NULL AS VARCHAR(50))                 AS prefix,
+                ISNULL(ext.rank, 'Employee')              AS rank,
+                ISNULL(ext.job_title, 'Employee')         AS job_title,
+                ext.suffix                                AS suffix,
+                ext.prefix                                AS prefix,
                 CAST(NULL AS INT)                         AS itemNo,
                 CAST(NULL AS INT)                         AS pageNo,
                 CAST(NULL AS INT)                         AS tblStructureID,
@@ -63,6 +65,8 @@ return new class extends Migration
                 ON ra.control_no = ea.control_no AND ra.active = 1
             LEFT JOIN vwActive act 
                 ON act.ControlNo = ea.control_no
+            LEFT JOIN employee_extra_details ext
+                ON ext.control_no = ea.control_no
 
             UNION ALL
 
@@ -81,10 +85,10 @@ return new class extends Migration
                 ra2.active                               AS active,
                 act2.Status                              AS status,
                 act2.Grades                              AS grades,
-                'Employee'                               AS rank,
-                'Employee'                               AS job_title,
-                CAST(NULL AS VARCHAR(50))                AS suffix,
-                CAST(NULL AS VARCHAR(50))                AS prefix,
+                ISNULL(ext2.rank, 'Employee')             AS rank,
+                ISNULL(ext2.job_title, 'Employee')        AS job_title,
+                ext2.suffix                               AS suffix,
+                ext2.prefix                               AS prefix,
                 ps.ItemNo                                AS itemNo,
                 ps.PageNo                                AS pageNo,
                 ps.ID                                    AS tblStructureID,
@@ -120,6 +124,8 @@ return new class extends Migration
                 ON ra2.control_no = ps.ControlNo AND ra2.active = 1
             LEFT JOIN vwActive act2 
                 ON act2.ControlNo = ps.ControlNo
+            LEFT JOIN employee_extra_details ext2
+                ON ext2.control_no = ps.ControlNo
             WHERE ps.ControlNo IS NOT NULL
         ");
     }

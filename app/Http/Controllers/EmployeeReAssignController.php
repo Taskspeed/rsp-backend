@@ -56,14 +56,13 @@ class EmployeeReAssignController extends Controller
     }
 
 
-    public function returnEmployeeReAssign(Request $request, string $controlNo, int $employeeReAssignId)
+    public function returnEmployeeReAssign(Request $request, int $employeeReAssignId)
     {
         $validatedData = $request->validate([
             'active' => 'required|boolean|in:0'
         ]);
 
         $findEmployee = EmployeeReAssign::where('id', $employeeReAssignId)
-            ->where('control_no', $controlNo)
             ->first();
 
         if (!$findEmployee) {

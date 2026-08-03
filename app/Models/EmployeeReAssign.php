@@ -25,5 +25,10 @@ class EmployeeReAssign extends Model
         'name'
     ];
 
+    public function xPersonal()
+    {
+        return $this->belongsTo(xPersonal::class, 'control_no', 'ControlNo');
+    }
+
   
 }

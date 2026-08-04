@@ -254,7 +254,7 @@ class ApplicantHiringService
             'PAGIBIGNo'    => $applicant->pagibig_no ?? null,
             'SSSNo'        => $applicant->sss_no ?? null,
             'PHEALTHNo'    => $applicant->philhealth_no ?? null,
-            'Pics' => $applicant->image_path ?? null,
+            // 'Pics' => $applicant->image_path ?? null,
             'FatherName'   => $this->upper($family->father_lastname),
             'MotherName'   => $this->upper($family->mother_lastname),
             'MaidenName'   => $this->upper($family->spouse_middlename),

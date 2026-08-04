@@ -48,4 +48,14 @@ class vwActive extends Model
         return $this->belongsTo(vwplantillastructure::class, 'ControlNo', 'ControlNo');
     }
 
+    public function xPersonal()
+    {
+        return $this->belongsTo(xPersonal::class, 'ControlNo', 'ControlNo');
+    }
+
+    public function employeeReAssign()
+    {
+        return $this->hasMany(EmployeeReAssign::class, 'control_no', 'ControlNo');
+    }
+
 }

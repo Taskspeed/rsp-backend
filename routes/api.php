@@ -453,7 +453,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/store', [EmployeeAssignController::class, 'storeEmployeeAssign']);
         Route::put('/update/{controlNo}', [EmployeeAssignController::class, 'updateEmployeeAssign']);
         Route::delete('/delete/{controlNo}', [EmployeeAssignController::class, 'deleteEmployeeAssign']);
-        Route::get('/detials/{employeeAssignId}', [EmployeeAssignController::class, 'viewEmployeeAssign']);
+        Route::get('/history/{controlNo}', [EmployeeAssignController::class, 'viewEmployeeAssign']);
 
     });
 
@@ -462,7 +462,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/update/{employeeReAssignId}', [EmployeeReAssignController::class, 'updateEmployeeReAssign']);
         Route::put('/return/{employeeReAssignId}', [EmployeeReAssignController::class, 'returnEmployeeReAssign']);
         Route::get('with/{office}', [OfficeController::class, 'employeeWithReAssign']);
-
        Route::get('/{office}', [OfficeController::class, 'getEmployee']);
     });
 
@@ -474,6 +473,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/store', [OfficeController::class, 'store']);
         Route::put('/update/{officeId}', [OfficeController::class, 'update']);
         Route::delete('/delete/{officeId}', [OfficeController::class, 'destroy']);
+        Route::get('view/{officeId}', [OfficeController::class, 'view']);
+        Route::put('/update/structure/{structureId}', [OfficeController::class, 'updateStructure']);
+        Route::post('/structure/store', [OfficeController::class, 'structureStore']);
+        Route::delete('/structure/delete/{structureId}', [OfficeController::class, 'structureDelete']);
+
     });
 
 });

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\EmployeeReAssignStoreRequest;
 use App\Http\Requests\EmployeeReAssignUpdateRequest;
 use App\Models\EmployeeReAssign;
+use App\Models\SPMS\Employee;
 use App\Traits\ApiResponseTrait;
 use Illuminate\Http\Request;
 
@@ -32,6 +33,8 @@ class EmployeeReAssignController extends Controller
             'active' => 1,
         ]);
 
+     
+
         return $this->successMessage($employeeReAssign, 'success re-assign employee', 200);
     }
 
@@ -43,7 +46,7 @@ class EmployeeReAssignController extends Controller
         // check if this control_no already has an active re-assignment
         $findEmployee = EmployeeReAssign::find($employeeReAssignId);
 
-        if ($findEmployee) {
+        if (!$findEmployee) {
             return $this->errorMessage('Employee not found', 404);
         }
 
@@ -53,14 +56,13 @@ class EmployeeReAssignController extends Controller
     }
 
 
-    public function returnEmployeeReAssign(Request $request, string $controlNo, int $employeeReAssignId)
+    public function returnEmployeeReAssign(Request $request, int $employeeReAssignId)
     {
         $validatedData = $request->validate([
             'active' => 'required|boolean|in:0'
         ]);
 
         $findEmployee = EmployeeReAssign::where('id', $employeeReAssignId)
-            ->where('control_no', $controlNo)
             ->first();
 
         if (!$findEmployee) {

@@ -22,13 +22,12 @@ class EmployeeAssignUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-          
-           'office' => 'nullable|string',
-           'office2' => 'nullable|string',
-           'group' => 'nullable|string',
-            'division' => 'nullable|string',
-            'section' => 'nullable|string',
-            'unit' => 'nullable|string',
+        'office' => 'nullable|string',
+        'office2' => 'nullable|string',
+        'group' => 'nullable|string',
+        'division' => 'nullable|string',
+        'section' => 'nullable|string',
+        'unit' => 'nullable|string',
         ];
     }
 }

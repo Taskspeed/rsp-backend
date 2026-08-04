@@ -2118,15 +2118,6 @@ class ApplicantApplicationService
 
     private function parseBirthDate($rawDate): string
     {
-        // $formats = [
-        //     'm/d/Y',   // 06/11/2002 ← your Excel format (try FIRST)
-        //     'm/d/y',   // 06/11/02
-        //     'Y-m-d',   // 1990-05-15
-        //     'd-m-Y',   // 15-05-1990
-        //     'Y/m/d',   // 1990/05/15
-        //     'd/m/Y',   // 15/06/1990 (European format - try LAST)
-        //     'd/m/y',   // 15/06/90
-        // ];
         $formats = [
             'Y-m-d',   // 2002-06-07  ← ISO, unambiguous, try first
             'd/m/Y',   // 7/6/2002   ← Philippine/European: day first ✅
@@ -2244,12 +2235,7 @@ class ApplicantApplicationService
             // ✅ Use config() not env() — works even when config is cached
             $expected = trim((string) config('app.pds_file_secret'));
 
-            // Log::info('isOfficialPdsFile check', [
-            //     'secret_value' => $secretValue,
-            //     'expected'     => $expected,
-            //     'match'        => $secretValue === $expected,
-            // ]);
-
+           
             // ✅ Reject if EITHER is empty — prevents accidental bypass
             if (empty($secretValue) || empty($expected)) {
                 // Log::warning('isOfficialPdsFile: secret or expected is empty — rejecting');

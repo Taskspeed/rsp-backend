@@ -20,6 +20,8 @@ class EmployeeAssign extends Model
         'division',
         'section',
         'unit',
+        'name',
+        'position'
 
 
     ];

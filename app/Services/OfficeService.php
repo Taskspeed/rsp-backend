@@ -2,10 +2,12 @@
 
 namespace App\Services;
 
+use App\Http\Resources\EmployeeActiveResource;
 use App\Http\Resources\EmployeeResource;
 use App\Models\EmployeeAssign;
 use App\Models\EmployeeReAssign;
 use App\Models\Office;
+use App\Models\OfficeStructureOutside;
 use App\Models\vwActive;
 use App\Models\vwplantillastructure;
 
@@ -13,7 +15,7 @@ class OfficeService
 {
 
 
-   public function employee(string $office)
+    public function employee(string $office)
     {
         // employees whose home office matches
         $homeEmployees = vwActive::select('ControlNo', 'Office', 'Designation', 'Status', 'Name4')
@@ -25,7 +27,7 @@ class OfficeService
             ->pluck('control_no')
             ->toArray();
 
-        $nonPlantillaStatuses = ['CONTRACTUAL', 'JOB ORDER', 'CASUAL','HONORARIUM'];
+        $nonPlantillaStatuses = ['CONTRACTUAL', 'JOB ORDER', 'CASUAL', 'HONORARIUM'];
 
         // filter: keep regular employees as-is; keep non-plantilla employees only if in EmployeeAssign
         $filterAssigned = function ($employee) use ($nonPlantillaStatuses, $assignedControlNos) {
@@ -44,7 +46,7 @@ class OfficeService
             ->toArray();
 
         // pull those employees' details too (their home Office may differ)
-        $reassignedInEmployees = vwActive::select('ControlNo', 'Office', 'Designation', 'Status', 'Name4')
+        $reassignedInEmployees = vwActive::select('ControlNo', 'Office', 'Designation', 'Status', 'Name4',)
             ->whereIn('ControlNo', $reassignedInControlNos)
             ->get()
             ->filter($filterAssigned)
@@ -68,133 +70,227 @@ class OfficeService
         return $resource;
     }
 
-    // structure of office plantilla
-    public function structure($office)
+    // employeeListActive
+    public function employeeListActive(string $office)
     {
-        
-
-
-
-        // BASE RESULT STRUCTURE
-        $officeData = [
-       
-            'office' => $office,
-            'office2' => []
-        ];
-
-        // GET ALL RECORDS FOR THE OFFICE
-        $allunits = vwplantillastructure::where('office', $office)
-            ->orderBy('office2')
-            ->orderBy('group')
-            ->orderBy('division')
-            ->orderBy('section')
-            ->orderBy('unit')
+        // employees whose home office matches
+        $homeEmployees = vwActive::select('ControlNo', 'Office', 'Designation', 'Status', 'Name4')
+            ->where('Office', $office)
             ->get();
 
+        // control numbers of CONTRACTUAL/JOB ORDER/CASUAL employees explicitly assigned to this office
+        $assignedControlNos = EmployeeAssign::where('office', $office)
+            ->pluck('control_no')
+            ->toArray();
+
+        $nonPlantillaStatuses = ['CONTRACTUAL', 'JOB ORDER', 'CASUAL', 'HONORARIUM'];
+
+        $filterAssigned = function ($employee) use ($nonPlantillaStatuses, $assignedControlNos) {
+            if (in_array(strtoupper($employee->Status), $nonPlantillaStatuses)) {
+                return in_array($employee->ControlNo, $assignedControlNos);
+            }
+            return true;
+        };
+
+        $homeEmployees = $homeEmployees->filter($filterAssigned)->values();
+
+        // pull org-hierarchy fields for home employees from vwplantillastructure (default/home values)
+        $homeControlNos = $homeEmployees->pluck('ControlNo')->toArray();
+
+        $structureData = vwplantillastructure::select('ControlNo', 'office2', 'group', 'division', 'section', 'unit','Name4')
+            ->whereIn('ControlNo', $homeControlNos)
+            ->get()
+            ->keyBy('ControlNo');
+
+        $homeEmployees = $homeEmployees->map(function ($employee) use ($structureData) {
+            $struct = $structureData->get($employee->ControlNo);
+
+            $employee->office2  = $struct->office2  ?? null;
+            $employee->group    = $struct->group    ?? null;
+            $employee->division = $struct->division ?? null;
+            $employee->section  = $struct->section  ?? null;
+            $employee->unit     = $struct->unit     ?? null;
+
+            return $employee;
+        });
+
+        // control numbers of employees actively re-assigned INTO this office
+        $reassignedInControlNos = EmployeeReAssign::where('office', $office)
+            ->where('active', 1)
+            ->pluck('control_no')
+            ->toArray();
+
+        $reassignedInEmployees = vwplantillastructure::select('ControlNo', 'Office', 'position', 'Status', 'Name4', 'office', 'office2', 'group', 'division', 'section', 'unit')
+            ->whereIn('ControlNo', $reassignedInControlNos)
+            ->get()
+            ->filter($filterAssigned)
+            ->values();
+
+        // merge + dedupe by ControlNo
+        $employees = $homeEmployees->concat($reassignedInEmployees)
+            ->unique('ControlNo')
+            ->values();
+
+        // re-check active reassignment status for the final combined list
+        $reassignedControlNos = EmployeeReAssign::whereIn('control_no', $employees->pluck('ControlNo'))
+            ->where('active', 1)
+            ->pluck('control_no')
+            ->toArray();
+
+        // fetch EmployeeAssign records (non-plantilla, not re-assigned) keyed by control_no
+        $assignData = EmployeeAssign::whereIn('control_no', $employees->pluck('ControlNo'))
+            ->select('control_no', 'office', 'office2', 'group', 'division', 'section', 'unit')
+            ->get()
+            ->keyBy('control_no');
+
+        // fetch EmployeeReAssign records (active, re-assigned) keyed by control_no
+        $reassignData = EmployeeReAssign::whereIn('control_no', $employees->pluck('ControlNo'))
+            ->where('active', 1)
+            ->select('control_no', 'office', 'office2', 'group', 'division', 'section', 'unit')
+            ->get()
+            ->keyBy('control_no');
+
+        // apply the office/org-hierarchy override rules
+        $employees = $employees->map(function ($employee) use (
+            $reassignedControlNos,
+            $reassignData,
+            $assignData,
+            $nonPlantillaStatuses
+        ) {
+            $controlNo = $employee->ControlNo;
+            $isReassigned = in_array($controlNo, $reassignedControlNos);
+
+            if ($isReassigned) {
+                // re-assign true -> use EmployeeReAssign values
+                $reassign = $reassignData->get($controlNo);
+                $employee->Office   = $reassign->office   ?? $employee->Office;
+                $employee->office2  = $reassign->office2  ?? null;
+                $employee->group    = $reassign->group    ?? null;
+                $employee->division = $reassign->division ?? null;
+                $employee->section  = $reassign->section  ?? null;
+                $employee->unit     = $reassign->unit     ?? null;
+            } elseif (in_array(strtoupper($employee->Status), $nonPlantillaStatuses)) {
+                // non-plantilla, not re-assigned -> use EmployeeAssign values
+                $assign = $assignData->get($controlNo);
+                $employee->Office   = $assign->office   ?? $employee->Office;
+                $employee->office2  = $assign->office2  ?? null;
+                $employee->group    = $assign->group    ?? null;
+                $employee->division = $assign->division ?? null;
+                $employee->section  = $assign->section  ?? null;
+                $employee->unit     = $assign->unit     ?? null;
+            }
+            // else: Regular, not re-assigned -> keep vwplantillastructure values already merged above
+
+            return $employee;
+        });
+
+        $resource = $employees->map(
+            fn($employee) => new EmployeeActiveResource($employee, $reassignedControlNos)
+        );
+
+        return $resource;
+    }
+
+// ... rest of your controller
+
+// structure of office plantilla
+public function structure($office)
+{
+
+    // BASE RESULT STRUCTURE
+    $officeData = [
+
+        'office' => $office,
+        'office2' => []
+    ];
+// GET ALL RECORDS FOR THE OFFICE (MAIN SOURCE)
+$plantillaUnits = vwplantillastructure::where('office', $office)
+    ->orderBy('office2')
+    ->orderBy('group')
+    ->orderBy('division')
+    ->orderBy('section')
+    ->orderBy('unit')
+    ->get();
+
+// GET ALL RECORDS FOR THE OFFICE (ADDITIONAL/OUTSIDE SOURCE)
+$outsideUnits = OfficeStructureOutside::where('office', $office)
+    ->orderBy('office2')
+    ->orderBy('group')
+    ->orderBy('division')
+    ->orderBy('section')
+    ->orderBy('unit')
+    ->get();
+
+// USE concat() INSTEAD OF merge() —
+// merge() on Eloquent Collections keys by primary key (getKey()) and
+// will silently overwrite rows when keys collide or are all null (as
+// with a view like vwplantillastructure that has no reliable PK).
+// concat() always appends by position, no dedup, no overwrite.
+$allunits = $plantillaUnits->concat($outsideUnits);
+
+    /* ============================================================
+   1. PROCESS OFFICE2
+============================================================ */
+
+    $office2List = $allunits->unique('office2');
+
+    foreach ($office2List as $office2Row) {
+
+        $office2Name = $office2Row->office2 ?? null;
+
+        $office2Data = [
+            'office2' => $office2Name,
+            'group' => []
+        ];
+
+        // FILTER ALL RECORDS UNDER THIS office2
+        $office2units = $allunits->where('office2', $office2Name);
+
         /* ============================================================
-       1. PROCESS OFFICE2
+       2. PROCESS group UNDER THIS office2
     ============================================================ */
 
-        $office2List = $allunits->unique('office2');
+        $group = $office2units->unique('group');
 
-        foreach ($office2List as $office2Row) {
+        foreach ($group as $groupRow) {
 
-            $office2Name = $office2Row->office2 ?? null;
+            $groupName = $groupRow->group ?? null;
 
-            $office2Data = [
-                'office2' => $office2Name,
-                'group' => []
+            $groupData = [
+                'group' => $groupName,
+                'divisions' => [],
+                'sections_without_division' => [],
+                'units_without_division' => []
             ];
 
-            // FILTER ALL RECORDS UNDER THIS office2
-            $office2units = $allunits->where('office2', $office2Name);
+            // FILTER RECORDS FOR THIS GROUP
+            $groupunits = $office2units->where('group', $groupName);
 
             /* ============================================================
-           2. PROCESS group UNDER THIS office2
+           3. PROCESS divisionS UNDER THIS GROUP
         ============================================================ */
+            $divisions = $groupunits->whereNotNull('division')->unique('division');
 
-            $group = $office2units->unique('group');
+            foreach ($divisions as $division) {
 
-            foreach ($group as $groupRow) {
-
-                $groupName = $groupRow->group ?? null;
-
-                $groupData = [
-                    'group' => $groupName,
-                    'divisions' => [],
-                    'sections_without_division' => [],
-                    'units_without_division' => []
+                $divisionData = [
+                    'division' => $division->division,
+                    'sections' => [],
+                    'units_without_section' => []
                 ];
 
-                // FILTER RECORDS FOR THIS GROUP
-                $groupunits = $office2units->where('group', $groupName);
-
-                /* ============================================================
-               3. PROCESS divisionS UNDER THIS GROUP
-            ============================================================ */
-                $divisions = $groupunits->whereNotNull('division')->unique('division');
-
-                foreach ($divisions as $division) {
-
-                    $divisionData = [
-                        'division' => $division->division,
-                        'sections' => [],
-                        'units_without_section' => []
-                    ];
-
-                    // sectionS UNDER THIS division
-                    $sections = $groupunits
-                        ->where('division', $division->division)
-                        ->whereNotNull('section')
-                        ->unique('section');
-
-                    foreach ($sections as $section) {
-
-                        $sectionData = [
-                            'section' => $section->section,
-                            'units' => $groupunits
-                                ->where('division', $division->division)
-                                ->where('section', $section->section)
-                                ->whereNotNull('unit')
-                                ->pluck('unit')
-                                ->unique()
-                                ->values()
-                                ->toArray()
-                        ];
-
-                        $divisionData['sections'][] = $sectionData;
-                    }
-
-                    // unitS WITHOUT section
-                    $divisionunits = $groupunits
-                        ->where('division', $division->division)
-                        ->whereNull('section')
-                        ->whereNotNull('unit')
-                        ->pluck('unit')
-                        ->unique()
-                        ->values()
-                        ->toArray();
-
-                    $divisionData['units_without_section'] = $divisionunits;
-
-                    $groupData['divisions'][] = $divisionData;
-                }
-
-                /* ============================================================
-               4. sectionS WITHOUT division UNDER THIS GROUP
-            ============================================================ */
-
-                $sectionsWithoutdivision = $groupunits
-                    ->whereNull('division')
+                // sectionS UNDER THIS division
+                $sections = $groupunits
+                    ->where('division', $division->division)
                     ->whereNotNull('section')
                     ->unique('section');
 
-                foreach ($sectionsWithoutdivision as $section) {
+                foreach ($sections as $section) {
 
                     $sectionData = [
                         'section' => $section->section,
                         'units' => $groupunits
-                            ->whereNull('division')
+                            ->where('division', $division->division)
                             ->where('section', $section->section)
                             ->whereNotNull('unit')
                             ->pluck('unit')
@@ -203,12 +299,12 @@ class OfficeService
                             ->toArray()
                     ];
 
-                    $groupData['sections_without_division'][] = $sectionData;
+                    $divisionData['sections'][] = $sectionData;
                 }
 
-                // unitS WITHOUT division AND section
-                $unitsWithoutdivision = $groupunits
-                    ->whereNull('division')
+                // unitS WITHOUT section
+                $divisionunits = $groupunits
+                    ->where('division', $division->division)
                     ->whereNull('section')
                     ->whereNotNull('unit')
                     ->pluck('unit')
@@ -216,14 +312,64 @@ class OfficeService
                     ->values()
                     ->toArray();
 
-                $groupData['units_without_division'] = $unitsWithoutdivision;
+                $divisionData['units_without_section'] = $divisionunits;
 
-                $office2Data['group'][] = $groupData;
+                $groupData['divisions'][] = $divisionData;
             }
 
-            $officeData['office2'][] = $office2Data;
+            /* ============================================================
+           4. sectionS WITHOUT division UNDER THIS GROUP
+        ============================================================ */
+
+            $sectionsWithoutdivision = $groupunits
+                ->whereNull('division')
+                ->whereNotNull('section')
+                ->unique('section');
+
+            foreach ($sectionsWithoutdivision as $section) {
+
+                $sectionData = [
+                    'section' => $section->section,
+                    'units' => $groupunits
+                        ->whereNull('division')
+                        ->where('section', $section->section)
+                        ->whereNotNull('unit')
+                        ->pluck('unit')
+                        ->unique()
+                        ->values()
+                        ->toArray()
+                ];
+
+                $groupData['sections_without_division'][] = $sectionData;
+            }
+
+            // unitS WITHOUT division AND section
+            $unitsWithoutdivision = $groupunits
+                ->whereNull('division')
+                ->whereNull('section')
+                ->whereNotNull('unit')
+                ->pluck('unit')
+                ->unique()
+                ->values()
+                ->toArray();
+
+            $groupData['units_without_division'] = $unitsWithoutdivision;
+
+            $office2Data['group'][] = $groupData;
         }
 
-        return [$officeData];
+        $officeData['office2'][] = $office2Data;
     }
+
+    return [$officeData];
+}
+
+public function merge($items)
+{
+    foreach ($items as $item) {
+        $key = $item->getKey();
+        $this->items[$key] = $item; // OVERWRITES if key collides
+    }
+    return $this;
+}
 }

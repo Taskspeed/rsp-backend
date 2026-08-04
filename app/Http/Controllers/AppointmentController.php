@@ -2,17 +2,18 @@
 
 namespace App\Http\Controllers;
 
-use Carbon\Carbon;
-use App\Models\xPersonal;
-use App\Models\Submission;
-use Illuminate\Http\Request;
 use App\Models\JobBatchesRsp;
+use App\Models\Submission;
 use App\Models\TempRegHistory;
-use Illuminate\Support\Facades\DB;
+use App\Models\xPersonal;
 use App\Services\AppiontmentService;
 use App\Services\ApplicantHiringService;
 use App\Services\EmployeeService;
 use App\Traits\ApiResponseTrait;
+use Carbon\Carbon;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class AppointmentController extends Controller
 {
@@ -32,9 +33,9 @@ class AppointmentController extends Controller
 
         // Call the service method
 
-        return $this->hiringService->hireApplicant($submissionId,$request);
+        return $this->hiringService->hireApplicant($submissionId, $request);
     }
-    
+
     public function rollbackHire($submissionId, Request $request)
     {
 
@@ -172,11 +173,21 @@ class AppointmentController extends Controller
     }
 
     // list of employee advance print appiotment
-     public function appiontmentListAdvance()
+    public function appointmentListAdvance()
     {
+        try {
+            $data = $this->appiontmentService->listOfEmployeeAdvance();
 
-       $data = $this->appiontmentService->listOfEmployeeAdvance();
+            return $this->successMessage($data, 'Successfully retrieved', 200);
+        } catch (\Exception $e) {
+            Log::error('Failed to retrieve appointment list advance', [
+                'message' => $e->getMessage(),
+                'file'    => $e->getFile(),
+                'line'    => $e->getLine(),
+                'trace'   => $e->getTraceAsString(),
+            ]);
 
-       return $this->successMessage($data,'successfully',200);
+            return $this->errorMessage('Failed to retrieve appointment list', 500);
+        }
     }
 }

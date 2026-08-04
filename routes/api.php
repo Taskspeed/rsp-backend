@@ -155,7 +155,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/', [AppointmentController::class, 'appiontment']); // manual appointment
         Route::get('/position', [AppointmentController::class, 'position']);
         Route::get('/vice/name/{position}/{status}', [AppointmentController::class, 'getEmployeePreviousDesignation']);
-        Route::get('/advance/list', [AppointmentController::class, 'appiontmentListAdvance']);
+        Route::get('/advance/list', [AppointmentController::class, 'appointmentListAdvance']);
     });
 
     Route::prefix('vw-Active')->group(function () {

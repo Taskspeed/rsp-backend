@@ -356,7 +356,7 @@ public function listOfEmployeeAdvance()
             $tempReg = $tempRegByControlNo->get($employee->ControlNo);
 
             $employee->Designation = $record->Designation ?? null;
-            $employee->Office      = $record->Office ?? $employee->Office;
+            $employee->Office      = $record->Office ?? null;
             $employee->FromDate    = $fromDate?->format('m/d/Y');
             $employee->ToDate      = $toDate?->format('m/d/Y');
             $employee->PMID        = $record->PMID ?? null;

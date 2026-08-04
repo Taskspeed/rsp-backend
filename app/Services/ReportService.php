@@ -1721,21 +1721,7 @@ class ReportService
 
     // --- EXTERNAL format helpers ---
 
-    // public function formatEducationForQualifiedExternal($educationRecords)
-    // {
-    //     if ($educationRecords->isEmpty()) {
-    //         return '';
-    //     }
 
-    //     $formatted = [];
-    //     foreach ($educationRecords as $edu) {
-    //         $degree = $edu->degree ?? '';
-    //         $unit   = $edu->highest_units ?? '';
-    //         $formatted[] = "• {$degree} ({$unit} units)";
-    //     }
-
-    //     return implode('<br>', $formatted);
-    // }
     public function formatEducationForQualifiedExternal($educationRecords)
     {
         if ($educationRecords->isEmpty()) {
@@ -2039,6 +2025,8 @@ class ReportService
             'nPersonalInfo.firstname',
             'nPersonalInfo.lastname',
             'submission.id as submission_id',
+            'submission.education_qualification',
+            'submission.eligibility_qualification',
             'applicant_exam_scores.exam_percentage'  // ← replaces rating_score.exam_score
 
         )
@@ -2061,6 +2049,7 @@ class ReportService
                  })
             ->get();
 
+    
         $scoresByApplicant = $allScores->groupBy(
             fn($row) => $row->nPersonalInfo_id ?: 'control_' . $row->ControlNo
         );
@@ -2075,6 +2064,11 @@ class ReportService
             $office          = null;
             $designation     = null;
             $lengthOfService = null;
+            $age             = null; // ✅ new
+
+            $submissionModel = Submission::find($firstRow->submission_id);
+            $educationRecords   = collect();
+            $eligibilityRecords = collect();
 
             // ── Internal Applicant ─────────────────────────────────────────────
             if ((!$firstname || !$lastname) && $firstRow->ControlNo) {
@@ -2084,6 +2078,13 @@ class ReportService
                 $lastname  = $active->Surname   ?? null;
                 $pics      = $active->Pics ?? null;
 
+                 if (!empty($active->BirthDate)) {
+                    try {
+                        $age = Carbon::parse($active->BirthDate)->age;
+                    } catch (\Exception $e) {
+                        $age = null;
+                    }
+                }
                 $current_service = DB::table('xService')
                     ->where('ControlNo', $firstRow->ControlNo)
                     ->orderByDesc('ToDate')
@@ -2099,6 +2100,11 @@ class ReportService
                     } elseif (filter_var($pics, FILTER_VALIDATE_URL)) {
                         $imageUrl = $pics;
                     }
+                }
+
+                 if ($submissionModel) {
+                    $educationRecords   = $submissionModel->getEducationRecordsInternal();
+                    $eligibilityRecords = $submissionModel->getEligibilityRecordsInternal();
                 }
 
                 $xservice  = xService::select('FromDate', 'ToDate')->where('ControlNo', $firstRow->ControlNo)->get();
@@ -2127,6 +2133,14 @@ class ReportService
             if ($firstRow->nPersonalInfo_id) {
                 $personalInfo = \App\Models\excel\nPersonal_info::find($firstRow->nPersonalInfo_id);
                 $rawImagePath = $personalInfo->image_path ?? null;
+                 $rawDob = $personalInfo->date_of_birth ?? null; // ⚠️ rename to your actual column if different
+                    if (!empty($rawDob)) {
+                        try {
+                            $age = Carbon::createFromFormat('d/m/Y', trim($rawDob))->age;
+                        } catch (\Exception $e) {
+                            $age = null;
+                        }
+                }
 
                 if ($rawImagePath) {
                     if (filter_var($rawImagePath, FILTER_VALIDATE_URL)) {
@@ -2135,6 +2149,11 @@ class ReportService
                         $imageUrl = config('app.url') . '/api/applicant/photo/' . $firstRow->nPersonalInfo_id;
                     }
                 }
+
+                 if ($submissionModel) {
+                $educationRecords   = $submissionModel->getEducationRecordsExternal();
+                $eligibilityRecords = $submissionModel->getEligibilityRecordsExternal();
+              }
             }
 
             // ── Per-rater breakdown ────────────────────────────────────────────
@@ -2178,6 +2197,7 @@ class ReportService
                 'submission_id'     => $firstRow->submission_id,
                 'firstname'         => $firstname,
                 'lastname'          => $lastname,
+                 'age'               => $age, // ✅ new
                 'image_url'         => $imageUrl,
                 'office'            => $office ?? null,
                 'current_position'  => $designation ?? null,
@@ -2188,6 +2208,8 @@ class ReportService
                 'exam_score' => $computed['exam_score'],
                 'final_rating'      => $computed['grand_total'],
                 'grand_total'       => $computed['grand_total'],
+                'education'         => $educationRecords,   // ✅ new
+                'eligibility'        => $eligibilityRecords, // ✅ new
             ];
         }
 

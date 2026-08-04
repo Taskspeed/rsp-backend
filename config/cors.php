@@ -21,7 +21,7 @@ return [
     'allowed_origins' => [
         // '*'
         'http://192.168.8.182:9000', // 👈 Add this
-        'http://192.168.8.80:9002', // 👈 Add this
+        'http://192.168.8.80:9001', // 👈 Add this
         'http://192.168.8.80:9003', // 👈 Add this
         'http://localhost:9000',
         'http://localhost:1000',
@@ -41,13 +41,14 @@ return [
         'http://192.168.100.174:1000',
         'http://rsp.tagum',
         'http://erms.tagum',
-        'http://10.0.1.23:92'
+        'http://10.0.1.23:92',
+        'http://192.168.8.234:9000'
 
     ],
     'allowed_origins_patterns' => [],
     'allowed_headers' => ['*'],
     'exposed_headers' => [],
     'max_age' => 0,
-    'supports_credentials' => true,
+    'supports_credentials' => false,
 
 ];

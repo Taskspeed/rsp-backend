@@ -186,8 +186,11 @@ class AppointmentController extends Controller
                 'line'    => $e->getLine(),
                 'trace'   => $e->getTraceAsString(),
             ]);
-
-            return $this->errorMessage('Failed to retrieve appointment list', 500);
+            return  $this->errorMessage([
+                        'message' => 'Failed to retrieve appointment list',
+                        'line' => $e->getLine(),
+                        'error' => $e->getMessage(),
+                    ], 500);
         }
     }
 }

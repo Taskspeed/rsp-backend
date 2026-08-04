@@ -324,20 +324,21 @@ public function listOfEmployeeAdvance()
         ->get()
         ->keyBy('ControlNo');
 
-    $latestService = DB::table('xService as s')
-        ->join('xPersonal as v', 's.ControlNo', '=', 'v.ControlNo')
-        ->select(
-            's.PMID',
-            's.ControlNo',
-            's.FromDate',
-            's.ToDate',
-            's.Designation',
-            's.Office',
-            DB::raw('ROW_NUMBER() OVER (PARTITION BY s.ControlNo ORDER BY s.FromDate DESC) as rn')
-        )
-        ->get()
-        ->where('rn', 1)
-        ->keyBy('ControlNo');
+    $latestService = DB::table(DB::raw("(
+        SELECT
+            s.PMID,
+            s.ControlNo,
+            s.FromDate,
+            s.ToDate,
+            s.Designation,
+            s.Office,
+            ROW_NUMBER() OVER (PARTITION BY s.ControlNo ORDER BY s.FromDate DESC) as rn
+        FROM xService s
+        INNER JOIN xPersonal v ON s.ControlNo = v.ControlNo
+    ) as t"))
+    ->where('rn', 1)
+    ->get()
+    ->keyBy('ControlNo');
 
     $today = Carbon::today();
 

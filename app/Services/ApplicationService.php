@@ -104,6 +104,15 @@ class ApplicationService
             }
 
             DB::beginTransaction();
+            
+            if (!empty($validatedData['image_path']) && $validatedData['image_path'] instanceof \Illuminate\Http\UploadedFile) {
+                $validatedData['image_path'] = $validatedData['image_path']->store(
+                    'temp_images',
+                    'public'
+                );
+            } else {
+                unset($validatedData['image_path']); // huwag i-overwrite kung walang bagong upload (update scenario)
+            }
 
             if ($existingSubmission) {
                 // update path — reuse existing nPersonalInfo record
@@ -202,10 +211,20 @@ class ApplicationService
                 Personal_declarations::create(array_merge($personal_declaration, ['nPersonalInfo_id' => $personal->id]));
             }
 
-        foreach ($validatedData['other_document'] ?? [] as $document) {
-                if (!empty($document['document']) && $document['document'] instanceof \Illuminate\Http\UploadedFile) {
-                    $document['document'] = $document['document']->store(
-                        "applicant_files/{$personal->id}/other_document",
+            foreach ($validatedData['other_document'] ?? [] as $document) {
+                    if (!empty($document['document']) && $document['document'] instanceof \Illuminate\Http\UploadedFile) {
+                        $document['document'] = $document['document']->store(
+                            "applicant_files/{$personal->id}/other_document",
+                            'public'
+                        );
+                    }
+                }
+
+        
+            foreach ($validatedData['pds'] ?? [] as $pds) {
+                if (!empty($pds['pds_file']) && $pds['pds_file'] instanceof \Illuminate\Http\UploadedFile) {
+                    $pds['pds_file'] = $pds['pds_file']->store(
+                        "applicant_files/{$personal->id}/pds_file",
                         'public'
                     );
                 }

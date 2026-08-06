@@ -32,13 +32,13 @@ class ApplicationController extends Controller
                         ? Carbon::createFromFormat('d/m/Y', $applicant->date_of_birth)->format('F j, Y')
                         : null,
                     'email_address' => $applicant->email_address,
-                    'office' => $batch->Office ?? null,
-                    'applied_position' => $batch->Position ?? null,
-                    'salary_grade' => $batch->SalaryGrade ?? null,
-                    'post_date' => $batch->post_date ? Carbon::parse($batch->post_date)->format('F j, Y') : null,
-                    'end_date'  => $batch->end_date ? Carbon::parse($batch->end_date)->format('F j, Y') : null,
-                    'application_applied_date' => $batch->pivot->created_at ?? null,
-                    'application_status' => $batch->pivot->status ?? null,
+                    'office' => $batch?->Office,
+                    'applied_position' => $batch?->Position,
+                    'salary_grade' => $batch?->SalaryGrade,
+                    'post_date' => $batch?->post_date ? Carbon::parse($batch->post_date)->format('F j, Y') : null,
+                    'end_date'  => $batch?->end_date ? Carbon::parse($batch->end_date)->format('F j, Y') : null,
+                    'application_applied_date' => $batch?->pivot?->created_at,
+                    'application_status' => $batch?->pivot?->status,
                 ];
             });
 

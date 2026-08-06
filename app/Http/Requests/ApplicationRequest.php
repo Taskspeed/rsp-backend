@@ -44,7 +44,7 @@ class ApplicationRequest extends FormRequest
             'philhealth_no' => 'nullable|string',
             'sss_no' => 'nullable|string',
             'tin_no' => 'nullable|string',
-            'image_path' => 'nullable|image|mimes:jpg,jpeg,png|max:5120',
+            'image_path' => 'required|image|mimes:jpg,jpeg,png|max:5120',
             'civil_status' => 'nullable|string',
             'citizenship' => 'nullable|string',
             'citizenship_status' => 'nullable|string',
@@ -244,8 +244,9 @@ class ApplicationRequest extends FormRequest
             'other_document'             => 'nullable|array',
             'other_document.*.document'  => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
 
-
-
+            // pds
+            'pds'          => 'required|array',
+            'pds.*.pds_file'  => 'required|file|mimes:jpg,jpeg,png,pdf|max:5120',
 
 
 

@@ -252,7 +252,7 @@ class JobBatchesRspController extends Controller
     public function jobPostCompleteStatus()
     {
         $jobs = JobBatchesRsp::select('id as jobpostId', 'Office', 'Position', 'status', 'post_date', 'end_date')
-            ->whereIn('status', ['Republished', 'rated', 'Unoccupied', 'Occupied','assessed'])
+            ->whereIn('status', ['Republished', 'rated', 'Unoccupied', 'Occupied', 'assessed'])
             ->get();
 
         return response()->json($jobs);
@@ -340,12 +340,6 @@ class JobBatchesRspController extends Controller
                     $service = xService::where('submission_id', $submission->id)->first();
 
                     return [
-                        // 'submission_id' => $submission->id,
-                        // 'control_no'    => $submission->ControlNo,
-                        // 'name'          => $name,
-                        // 'salary_grade'  => $jobPost->SalaryGrade,
-                        // 'ItemNo'        => $jobPost->ItemNo,
-                        // 'designation'   => $jobPost->Position,
                         'effectiveDate' => $service?->effectiveDate
                             ? Carbon::parse($service->effectiveDate)->format('M d, Y')
                             : null,
@@ -354,8 +348,13 @@ class JobBatchesRspController extends Controller
             });
 
             return [
-                'date'                   => Carbon::parse($postDate)->format('M d, Y'),
-                'effective_date_available' => $effectiveDates->values(), // ← flattened list
+                'date' => Carbon::parse($postDate)->format('M d, Y'),
+                'effective_date_available' => $effectiveDates
+                    ->pluck('effectiveDate')      // kunin lang yung string values
+                    ->filter()                     // tanggalin yung null entries
+                    ->unique()                     // alisin yung duplicates
+                    ->values()                     // i-reset yung array keys (0,1,2...)
+                    ->map(fn($date) => ['effectiveDate' => $date]), // ibalik sa dating shape
             ];
         });
 

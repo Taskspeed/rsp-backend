@@ -297,6 +297,7 @@ class ApplicantService
         $eligibilityImages = [];
         $experienceImages  = [];
         $otherDocument  = [];
+        $pds_file  = [];
 
         if ($submission->ControlNo) {
             $internalImages = $this->getInternalPdsImage($submission->ControlNo);
@@ -307,6 +308,7 @@ class ApplicantService
             $eligibilityImages = $internalData['eligibility_images'] ?? [];
             $experienceImages  = $internalData['experience_images']  ?? [];
             $otherDocument  = $internalData['other_documents']  ?? [];
+            $pds_file  = $internalData['pds_file']  ?? [];
         }
 
         // ✅ Use ControlNo folder for internal employees, nPersonalInfo_id for external
@@ -327,6 +329,7 @@ class ApplicantService
                 'eligibility' => $baseFolder . '/eligibility',
                 'experience'  => $baseFolder . '/experience',
                 'other_document'  => $baseFolder . '/other_document',
+                'pds_file'  => $baseFolder . '/pds_file',
             ];
 
             foreach ($folders as $type => $path) {
@@ -345,6 +348,7 @@ class ApplicantService
                     if ($type === 'education')   $educationImages   = $files;
                     if ($type === 'eligibility') $eligibilityImages = $files;
                     if ($type === 'experience')  $experienceImages  = $files;
+                    if ($type === 'pds_file') $pds_file  = $files;
                     if ($type === 'other_document') $otherDocument  = $files;
                 }
             }
@@ -472,6 +476,7 @@ class ApplicantService
             'eligibility_images' => $eligibilityImages,
             'experience_images' => $experienceImages,
             'others_document' => $otherDocument,
+            'pds_file' => $pds_file,
             'ranking' => $rating->ranking ?? null,
         ], 200, [], JSON_UNESCAPED_SLASHES); // 👈 this is the key fix
     }

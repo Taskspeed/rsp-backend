@@ -6,6 +6,7 @@ use App\Models\excel\nPersonal_info;
 use App\Traits\ApiResponseTrait;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
 class ApplicationController extends Controller
@@ -71,22 +72,23 @@ class ApplicationController extends Controller
             return $this->errorMessage('applicant not found', 404);
         }
 
-        $categories = ['education', 'training', 'experience', 'eligibility'];
-        $images = [];
+        $categories = ['other_document', 'pds_file'];
+        $file = [];
 
         foreach ($categories as $category) {
-            $folder = "applicant_files/{$personalId}/{$category}";
+            $folder = "applicant_files/{$personalId->getKey()}/{$category}";
+
 
             if (Storage::disk('public')->exists($folder)) {
-                $images[$category] = collect(Storage::disk('public')->files($folder))
+                $file[$category] = collect(Storage::disk('public')->files($folder))
                     ->map(fn($path) => Storage::disk('public')->url($path))
                     ->values();
             } else {
-                $images[$category] = [];
+                $file[$category] = [];
             }
         }
 
-        $personalId->setAttribute('images', $images);
+        $personalId->setAttribute('file', $file);
 
         return $this->successMessage($personalId, 'success', 200);
     }

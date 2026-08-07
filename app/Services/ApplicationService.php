@@ -95,7 +95,18 @@ class ApplicationService
             $end_date   = Carbon::parse($currentJob->end_date)->format('F d, Y');
 
             // 4. Block if already applied 3 times
-            if ($applicationCount >= 3) {
+            // if ($applicationCount >= 3) {
+            //     return response()->json([
+            //         'success' => false,
+            //         'message' => "You have already applied for 3 job posts with the same application period (" .
+            //             $post_date . " to " .     $end_date  . ").",
+            //     ], 422);
+            // }
+              // 4. Block if already applied 3 times — pero skip kung update lang ito
+            // sa isang job post na kasama na sa 3 applications niya (hindi bagong slot).
+            // Kung wala pang existing submission sa job post na 'to (bagong application talaga)
+            // saka lang natin i-eenforce yung 3-application limit.
+            if (!$existingSubmission && $applicationCount >= 3) {
                 return response()->json([
                     'success' => false,
                     'message' => "You have already applied for 3 job posts with the same application period (" .
@@ -377,4 +388,5 @@ class ApplicationService
         return null;
     }
 
+                
 }

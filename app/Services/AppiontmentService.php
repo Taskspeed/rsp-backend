@@ -332,11 +332,13 @@ public function listOfEmployeeAdvance()
             s.ToDate,
             s.Designation,
             s.Office,
+            s.Status,
             ROW_NUMBER() OVER (PARTITION BY s.ControlNo ORDER BY s.FromDate DESC) as rn
         FROM xService s
         INNER JOIN xPersonal v ON s.ControlNo = v.ControlNo
     ) as t"))
     ->where('rn', 1)
+    ->whereIn('Status',['CO-TERMINOUS','REGULAR','ELECTIVE'])
     ->get()
     ->keyBy('ControlNo');
 

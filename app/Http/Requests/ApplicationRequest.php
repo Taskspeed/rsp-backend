@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Rules\FileOrExistingPath;
 use Illuminate\Foundation\Http\FormRequest;
 
 class ApplicationRequest extends FormRequest
@@ -44,7 +45,11 @@ class ApplicationRequest extends FormRequest
             'philhealth_no' => 'nullable|string',
             'sss_no' => 'nullable|string',
             'tin_no' => 'nullable|string',
-            'image_path' => 'required|image|mimes:jpg,jpeg,png|max:5120',
+            // 'image_path' => 'nullable|image|mimes:jpg,jpeg,png|max:5120',
+            
+            'image_path' => ['nullable', new FileOrExistingPath(['jpg', 'jpeg', 'png'])],
+
+
             'civil_status' => 'nullable|string',
             'citizenship' => 'nullable|string',
             'citizenship_status' => 'nullable|string',
@@ -119,7 +124,7 @@ class ApplicationRequest extends FormRequest
             'school.*.year_graduated' => ['nullable', 'regex:/^[0-9]{4}$/'],
             'school.*.scholarship' => 'nullable|string',
             'school.*.level' => 'nullable|string',
-            'school.*.attachment_path' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
+            'school.*.attachment_path' => ['nullable', new FileOrExistingPath(['jpg', 'jpeg', 'png', 'pdf'])],
 
             // 'school_name.*.graduated'=> 'nullable|string',
 
@@ -132,7 +137,7 @@ class ApplicationRequest extends FormRequest
             'training.*.number_of_hours' => 'nullable|integer',
             'training.*.type' => 'nullable|string',
             'training.*.conducted_by' => 'nullable|string',
-            'training.*.attachment_path' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
+            'training.*.attachment_path' => ['nullable', new FileOrExistingPath(['jpg', 'jpeg', 'png', 'pdf'])],
 
             // work-experience
             'experience' => 'nullable|array',
@@ -155,7 +160,9 @@ class ApplicationRequest extends FormRequest
             'experience.*.salary_grade' => 'nullable|string',
             'experience.*.status_of_appointment' => 'nullable|string',
             'experience.*.government_service' => 'nullable|string',
-            'experience.*.attachment_path' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
+            // 'experience.*.attachment_path' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
+            'experience.*.attachment_path' => ['nullable', new FileOrExistingPath(['jpg', 'jpeg', 'png', 'pdf'])],
+
             // voluntary
             'voluntary' => 'nullable|array',
             'voluntary.*.organization_name' => 'nullable|string',
@@ -173,7 +180,8 @@ class ApplicationRequest extends FormRequest
             'eligibility.*.place_of_examination' => 'nullable|string',
             'eligibility.*.license_number' => 'nullable|string',
             'eligibility.*.date_of_validity' => 'nullable|date_format:d/m/Y',
-            'eligibility.*.attachment_path' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
+            'eligibility.*.attachment_path' => ['nullable', new FileOrExistingPath(['jpg', 'jpeg', 'png', 'pdf'])],
+
 
 
 
@@ -242,12 +250,11 @@ class ApplicationRequest extends FormRequest
 
             // insert image education,training,experience
             'other_document'             => 'nullable|array',
-            'other_document.*.document'  => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
+            'other_document.*.document' => ['nullable', new FileOrExistingPath(['jpg', 'jpeg', 'png', 'pdf'])],
 
             // pds
             'pds'          => 'required|array',
-            'pds.*.pds_file'  => 'required|file|mimes:jpg,jpeg,png,pdf|max:5120',
-
+            'pds.*.pds_file' => ['required', new FileOrExistingPath(['jpg', 'jpeg', 'png', 'pdf', 'doc','docx'])],
 
 
         ];

@@ -90,6 +90,11 @@ class ApplicationController extends Controller
 
         $personalId->setAttribute('file', $file);
 
-        return $this->successMessage($personalId, 'success', 200);
+        // return $this->successMessage($personalId, 'success', 200,[], JSON_UNESCAPED_SLASHES);
+        return response()->json([
+            'success' => true,
+            'message' => 'success',
+            'data'    => $personalId,
+        ], 200, [], JSON_UNESCAPED_SLASHES);
     }
 }

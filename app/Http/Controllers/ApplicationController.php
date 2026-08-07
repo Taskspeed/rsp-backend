@@ -51,6 +51,8 @@ class ApplicationController extends Controller
 
 
     // get the pds of the applicant 
+    // get the pds of the applicant 
+    // get the pds of the applicant 
     public function getApplicantPdsExternalApplication(string $email)
     {
         $personalId = nPersonal_info::with([
@@ -72,12 +74,23 @@ class ApplicationController extends Controller
             return $this->errorMessage('applicant not found', 404);
         }
 
+        // convert attachment_path (relative storage path) → full accessible URL
+        // sa lahat ng relationships na may attachment_path column
+        $attachmentRelations = ['education', 'work_experience', 'training', 'eligibity'];
+
+        foreach ($attachmentRelations as $relation) {
+            $personalId->{$relation}->each(function ($item) {
+                if (!empty($item->attachment_path)) {
+                    $item->attachment_path = Storage::disk('public')->url($item->attachment_path);
+                }
+            });
+        }
+
         $categories = ['other_document', 'pds_file'];
         $file = [];
 
         foreach ($categories as $category) {
             $folder = "applicant_files/{$personalId->getKey()}/{$category}";
-
 
             if (Storage::disk('public')->exists($folder)) {
                 $file[$category] = collect(Storage::disk('public')->files($folder))
@@ -90,7 +103,6 @@ class ApplicationController extends Controller
 
         $personalId->setAttribute('file', $file);
 
-        // return $this->successMessage($personalId, 'success', 200,[], JSON_UNESCAPED_SLASHES);
         return response()->json([
             'success' => true,
             'message' => 'success',

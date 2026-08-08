@@ -40,9 +40,21 @@ use Illuminate\Support\Facades\Route;
 //     return "Free storage space: {$freeMB} MB";
 // });
 
+// api.php
+Route::get('/storage-cors/{path}', function ($path) {
+    $fullPath = storage_path('app/public/' . $path);
 
+    if (!file_exists($fullPath)) {
+        abort(404);
+    }
 
+    return response()->file($fullPath, [
+        'Access-Control-Allow-Origin' => '*', // o specific origin
+        'Access-Control-Allow-Methods' => 'GET',
+    ]);
+})->where('path', '.*');
 
+Route::get('employee/list', [AppointmentController::class, 'employee']); // employe list
 
 Route::get('/applicant/pds-image/{filename}', [JobBatchesRspController::class, 'proxyPdsImage']);
 
@@ -156,6 +168,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/position', [AppointmentController::class, 'position']);
         Route::get('/vice/name/{position}/{status}', [AppointmentController::class, 'getEmployeePreviousDesignation']);
         Route::get('/advance/list', [AppointmentController::class, 'appointmentListAdvance']);
+        Route::get('/effective/date/list', [AppointmentController::class, 'effectiveDateList']);
+        Route::get('/deliberation/date/list', [AppointmentController::class, 'deliberationDate']);
+
     });
 
     Route::prefix('vw-Active')->group(function () {

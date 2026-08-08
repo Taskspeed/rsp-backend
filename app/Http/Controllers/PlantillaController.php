@@ -211,7 +211,8 @@ class PlantillaController extends Controller
                             'vicecause',
                             'vicename',
                             'sepdate',
-                            'sepcause'
+                            'sepcause',
+                            'deliberation_date'
                         ])->latest('ID')->limit(1);
                         // ->orderBy('ID', 'desc'); // specify columns from TempRegAppointmentReorg
                     },

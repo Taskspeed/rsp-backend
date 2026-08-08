@@ -25,7 +25,7 @@ class EmployeeUpdateCredentialsRequest extends FormRequest
             //xPersonal
             'Surname' => 'required|string',
             'Firstname' => 'required|string',
-            'MIddlename' => 'required|string',
+            'MIddlename' => 'nullable|string',
             'Sex' => 'nullable|string',
             'CivilStatus' => 'required|string',
             'BirthDate' => 'nullable|date',
@@ -35,7 +35,7 @@ class EmployeeUpdateCredentialsRequest extends FormRequest
 
             // tempreg
 
-            'sepdate' => 'nullable|date',
+            'sepdate' => 'nullable|date_format:Y-m-d',
             'sepcause' => 'nullable|string',
             'vicename' => 'nullable|string',
             'vicecause' => 'nullable|string',
@@ -48,26 +48,26 @@ class EmployeeUpdateCredentialsRequest extends FormRequest
 
             // tempRegAppointmentReorgExt
             'tempExtId' => 'nullable|string',
-            'PresAppro'         => 'required|string',
-            'PrevAppro'         => 'required|string',
-            'SalAuthorized'     => 'required|string',
-            'OtherComp'         => 'required|string',
-            'SupPosition'       => 'required|string',
-            'HSupPosition'      => 'required|string',
+            'PresAppro'         => 'nullable|string',
+            'PrevAppro'         => 'nullable|string',
+            'SalAuthorized'     => 'nullable|string',
+            'OtherComp'         => 'nullable|string',
+            'SupPosition'       => 'nullable|string',
+            'HSupPosition'      => 'nullable|string',
             'Tool'              => 'nullable|string',
+           'deliberation_date' => 'nullable|date_format:Y-m-d',
 
 
-
-            'Contact1'          => 'required|integer',
-            'Contact2'          => 'required|integer',
-            'Contact3'          => 'required|integer',
-            'Contact4'          => 'required|integer',
-            'Contact5'          => 'required|integer',
-            'Contact6'          => 'required|integer',
+            'Contact1'          => 'nullable|integer',
+            'Contact2'          => 'nullable|integer',
+            'Contact3'          => 'nullable|integer',
+            'Contact4'          => 'nullable|integer',
+            'Contact5'          => 'nullable|integer',
+            'Contact6'          => 'nullable|integer',
             'ContactOthers'     => 'nullable|string',
 
-            'Working1'          => 'required|integer',
-            'Working2'          => 'required|integer',
+            'Working1'          => 'nullable|integer',
+            'Working2'          => 'nullable|integer',
             'WorkingOthers'     => 'nullable|string',
 
             'DescriptionSection'   => 'nullable|string',
@@ -84,22 +84,22 @@ class EmployeeUpdateCredentialsRequest extends FormRequest
             'Core2'             => 'nullable|integer',
             'Core3'             => 'nullable|integer',
 
-            'Corelevel1'        => 'required|integer',
-            'Corelevel2'        => 'required|integer',
-            'Corelevel3'        => 'required|integer',
-            'Corelevel4'        => 'required|integer',
+            'Corelevel1'        => 'nullable|integer',
+            'Corelevel2'        => 'nullable|integer',
+            'Corelevel3'        => 'nullable|integer',
+            'Corelevel4'        => 'nullable|integer',
 
-            'Leader1'           => 'required|integer',
-            'Leader2'           => 'required|integer',
-            'Leader3'           => 'required|integer',
-            'Leader4'           => 'required|integer',
+            'Leader1'           => 'nullable|integer',
+            'Leader2'           => 'nullable|integer',
+            'Leader3'           => 'nullable|integer',
+            'Leader4'           => 'nullable|integer',
 
-            'leaderlevel1'      => 'required|integer',
-            'leaderlevel2'      => 'required|integer',
-            'leaderlevel3'      => 'required|integer',
-            'leaderlevel4'      => 'required|integer',
+            'leaderlevel1'      => 'nullable|integer',
+            'leaderlevel2'      => 'nullable|integer',
+            'leaderlevel3'      => 'nullable|integer',
+            'leaderlevel4'      => 'nullable|integer',
 
-            'structureid'       => 'required|integer',
+            'structureid'       => 'nullable|integer',
 
 
         ];

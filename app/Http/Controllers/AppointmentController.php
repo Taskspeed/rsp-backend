@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\JobBatchesRsp;
 use App\Models\Submission;
+use App\Models\TempRegAppointmentReorg;
 use App\Models\TempRegHistory;
 use App\Models\xPersonal;
 use App\Models\xService;
@@ -199,6 +200,16 @@ class AppointmentController extends Controller
         ->distinct()->orderBy('effectiveDate', 'asc')->get();
         if ($date->isEmpty()) {
             return $this->infoMessage('No effective dates found', 200);
+        }
+        return $this->successMessage($date, 'Successful', 200);
+    }
+
+    public function deliberationDateList()
+    {
+        $date = TempRegAppointmentReorg::select('deliberation_date')->whereNotNull('deliberation_date')->where('deliberation_date', '!=', '')
+        ->distinct()->orderBy('deliberation_date', 'asc')->get();
+        if ($date->isEmpty()) {
+            return $this->infoMessage('No deliberation dates found', 200);
         }
         return $this->successMessage($date, 'Successful', 200);
     }

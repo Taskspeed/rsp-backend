@@ -16,6 +16,10 @@ class TempRegAppointmentReorg extends Model
     protected $casts = [
         'ControlNo' => 'string',
     ];
+
+    protected $fillable = [
+        'deliberation_date'
+    ];
     public function vwplantillaStructure()
     {
         return $this->hasOne(VwPlantillaStructure::class, 'ControlNo', 'ControlNo'); // adjust keys

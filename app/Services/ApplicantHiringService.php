@@ -2,15 +2,16 @@
 
 namespace App\Services;
 
-use Carbon\Carbon;
 use App\Mail\EmailApi;
-use App\Models\Submission;
-use Illuminate\Http\Request;
 use App\Models\JobBatchesRsp;
+use App\Models\Submission;
 use App\Models\TempRegHistory;
+use App\Models\xService;
+use Carbon\Carbon;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 
 
@@ -152,13 +153,13 @@ class ApplicantHiringService
             $this->updatePlantillaStructure($jobPost, $finalControlNo, $SepDate_service, $SepCause_service,$sepdate, $sepcause, $vicename, $vicecause, $fromDate, $submissionId);
 
             // ✅ Send email notification to the hired applicant
-            $externalApplicant = DB::table('xPersonalAddt')
+            $internalApplicant = DB::table('xPersonalAddt')
                 ->join('xPersonal', 'xPersonalAddt.ControlNo', '=', 'xPersonal.ControlNo')
                 ->where('xPersonalAddt.ControlNo', $submission->ControlNo)
                 ->select('xPersonalAddt.*', 'xPersonal.Firstname', 'xPersonal.Surname', 'xPersonalAddt.EmailAdd')
                 ->first();
 
-            $activeApplicant = $applicant ?? $externalApplicant;
+            $activeApplicant = $applicant ?? $internalApplicant;
 
 
 
@@ -604,21 +605,9 @@ class ApplicantHiringService
             ->orderBy('PMID', 'DESC')
             ->first();
 
-        // ✅ Temporarily log to see what's coming in
-        // Log::info('updatePlantillaStructure called', [
-        //     'controlNo'        => $controlNo,
-        //     'SepDate_service'  => $SepDate_service,
-        //     'SepCause_service' => $SepCause_service,
-        //     'activeService'    => $activeService,
-        // ]);
-
+       
         // 2. If employee has active service, SepDate and SepCause are required
         if ($activeService) {
-
-            // if (empty($SepDate_service) || empty($SepCause_service)) {
-            //     throw new \Exception("SepDate and SepCause are required when re-appointing an active employee.");
-            // }
-
             DB::table('xService')
                 ->where('PMID', $activeService->PMID)
                 ->update([
@@ -626,7 +615,6 @@ class ApplicantHiringService
                     'SepCause' =>  $SepCause_service,
                 ]);
         }
-
 
 
         // Move old records to history, then delete old records<|fim_middle|><|fim_middle|><|fim_middle|>
@@ -703,12 +691,18 @@ class ApplicantHiringService
                 ]);
             }
 
-        DB::table('xService')
+         DB::table('xService')
             ->where('ControlNo', $controlNo)
             ->where('ToDate', '>', $fromDate)
             ->update(['ToDate' => Carbon::parse($fromDate)->subDay()]);
 
+        $employeeStatus = xService::select(['ControlNo', 'FromDate', 'ToDate', 'Status'])
+            ->latest('FromDate', 'ToDate')
+            ->limit(1)
+            ->where('ControlNo', $controlNo)
+            ->first();
 
+        $renewType = $this->determineRenewType($employeeStatus); // ← idagdag ito
 
         DB::table('xService')->insert([
             'ControlNo'    => $controlNo, // 1
@@ -748,7 +742,7 @@ class ApplicantHiringService
             ->where('ItemNo', $jobPost->ItemNo)
             ->first();
 
-        // $nextId = DB::table('tempRegAppointmentReorg')->max('ID') + 1;
+        //  get the renew 
 
         DB::table('tempRegAppointmentReorg')->insert([
             // 'ID'            => $nextId,
@@ -764,7 +758,7 @@ class ApplicantHiringService
             'Office'        => $jobPost->Office,
             'MRate'         => $rateMon, //1
             'Official'      => 0,
-            'Renew'         => 'REAPPOINTMENT PURSUANT TO RA6656',
+            'Renew'         => $renewType,
             'ItemNo'        => $itemNo,
             'Pages'         => $pageNo,
             'StructureID'   => $structure->StructureID ?? null,
@@ -969,4 +963,25 @@ class ApplicantHiringService
             ], 500);
         }
     }
+
+    private function determineRenewType($employeeStatus)
+{
+    // External applicant — walang naunang xService record
+    if (!$employeeStatus) {
+        return 'ORIGINAL';
+    }
+
+    $status = strtoupper(trim($employeeStatus->Status ?? ''));
+
+    if (in_array($status, ['JOB ORDER', 'JO', 'CASUAL','CONTRACTUAL','HONORARIUM'])) {
+        return 'ORIGINAL';
+    }
+
+    if ($status === 'REGULAR') {
+        return 'PROMOTION';
+    }
+
+    // fallback default kung ibang status (e.g. COTERMINOUS, ELECTIVE, atbp.)
+    return 'REAPPOINTMENT PURSUANT TO RA6656';
+}
 }

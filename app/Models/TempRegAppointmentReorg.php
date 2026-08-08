@@ -18,7 +18,8 @@ class TempRegAppointmentReorg extends Model
     ];
 
     protected $fillable = [
-        'deliberation_date'
+        'deliberation_date',
+        'renew'
     ];
     public function vwplantillaStructure()
     {

@@ -39,6 +39,8 @@ class EmployeeUpdateCredentialsRequest extends FormRequest
             'sepcause' => 'nullable|string',
             'vicename' => 'nullable|string',
             'vicecause' => 'nullable|string',
+            'renew' => 'nullable|string',
+        
 
             // //xservice
             // 'FromDate' => 'required|date',

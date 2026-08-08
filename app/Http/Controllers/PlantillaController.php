@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Office;
 use App\Models\TempRegAppointmentReorg;
 use App\Models\vwActive;
-use App\Models\vwofficearrangement;
+
 use App\Models\vwplantillastructure;
 use App\Models\xService;
 use App\Services\ActivityLogService;
@@ -14,7 +14,7 @@ use App\Services\PlantillaService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use LDAP\Result;
+
 use PDO;
 
 class PlantillaController extends Controller
@@ -298,18 +298,55 @@ class PlantillaController extends Controller
                     }
                 ])
                 ->where('ControlNo', $ControlNo)
-                ->get();
+                ->first();
 
-            $user = Auth::user();
+         // ── Kunin ang latest tempRegAppointments record (Collection kasi hasMany) ──
+        $tempReg = $data->tempRegAppointments->first();
 
-            $this->activityLogService->logEmployeeAppointment($user, $data);
+        // ── Kunin ang current office ng employee ──────────────────────
+        // Priority: tempReg->NewOffice > tempReg->Office > plantilla->office
+        $employeeOffice = $tempReg->Office
 
-            return response()->json($data);
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Failed to fetch data',
-                'error' => $e->getMessage(),
-            ], 500);
+            ?? null;
+
+        $officeHead = null;
+
+        if ($employeeOffice) {
+            $officeHead = vwplantillastructure::select('ControlNo', 'Name4', 'office', 'position')
+                ->where('office', $employeeOffice)
+                ->where('position', 'CITY GOVERNMENT DEPARTMENT HEAD I')
+                ->first();
         }
+
+        // ── Determine Employment Type base sa Status ng tempReg ──────────
+        $employmentType = null;
+
+        if ($tempReg) {
+            $status = strtoupper(trim($tempReg->Status ?? ''));
+
+            if ($status === 'REGULAR') {
+                $employmentType = 'PERMANENT';
+            } elseif ($status === 'ELECTIVE') {
+                $employmentType = 'TEMPORARY';
+            }
+
+            // idagdag sa tempReg object mismo para makasama sa response
+            $tempReg->employment_type = $employmentType;
+        }
+
+        $user = Auth::user();
+
+        $this->activityLogService->logEmployeeAppointment($user, $data);
+
+        return response()->json([
+             $data,
+            $officeHead,
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'message' => 'Failed to fetch data',
+            'error'   => $e->getMessage(),
+        ], 500);
     }
+}
 }

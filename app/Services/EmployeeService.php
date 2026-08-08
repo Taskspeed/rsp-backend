@@ -74,7 +74,7 @@ class EmployeeService
                 'Surname' => $validated['Surname'] ?? null,
                 'Firstname' => $validated['Firstname'] ?? null,
                 'Middlename' => $validated['Middlename'] ?? null,
-                'Sex' => $validated['Sex'] ?? 'N/A',
+                'Sex' => $validated['Sex'] ?? null,
                 'CivilStatus' => $validated['CivilStatus'] ?? null,
                 'BirthDate' => $validated['BirthDate'] ?? null,
                 'TINNo' => $validated['TINNo'] ?? null,
@@ -98,6 +98,8 @@ class EmployeeService
                     'sepcause' => $validated['sepcause'] ?? null,
                     'vicename' => $validated['vicename'] ?? null,
                     'vicecause' => $validated['vicecause'] ?? null,
+                    'deliberation_date' => $validated['deliberation_date'] ?? null,
+                    'renew' => $validated['renew'] ?? null,
 
                 ]);
         }

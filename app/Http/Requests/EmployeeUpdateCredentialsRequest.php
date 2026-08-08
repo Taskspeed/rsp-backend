@@ -57,7 +57,7 @@ class EmployeeUpdateCredentialsRequest extends FormRequest
             'SupPosition'       => 'nullable|string',
             'HSupPosition'      => 'nullable|string',
             'Tool'              => 'nullable|string',
-           'deliberation_date' => 'nullable|date_format:Y-m-d',
+            'deliberation_date' => 'nullable|date_format:Y-m-d',
 
 
             'Contact1'          => 'nullable|integer',

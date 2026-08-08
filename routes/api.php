@@ -169,7 +169,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/vice/name/{position}/{status}', [AppointmentController::class, 'getEmployeePreviousDesignation']);
         Route::get('/advance/list', [AppointmentController::class, 'appointmentListAdvance']);
         Route::get('/effective/date/list', [AppointmentController::class, 'effectiveDateList']);
-        Route::get('/deliberation/date/list', [AppointmentController::class, 'deliberationDate']);
+        Route::get('/deliberation/date/list', [AppointmentController::class, 'deliberationDateList']);
 
     });
 

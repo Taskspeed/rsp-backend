@@ -170,7 +170,7 @@ class PlantillaController extends Controller
     public function getAllData($ControlNo)
     {
         try {
-            $data = xService::select(['ControlNo', 'FromDate', 'ToDate', 'Designation', 'Status', 'Office', 'RateYear', 'RateDay', 'RateMon'])->latest('FromDate', 'ToDate')->limit(1) // specify columns from xService
+            $data = xService::select(['ControlNo', 'FromDate', 'ToDate', 'Designation', 'Status', 'Office', 'RateYear', 'RateDay', 'RateMon','effectiveDate'])->latest('FromDate', 'ToDate')->limit(1) // specify columns from xService
                 ->with([
 
                     'xPersonal' => function ($query) {

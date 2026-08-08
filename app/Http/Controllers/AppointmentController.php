@@ -6,6 +6,7 @@ use App\Models\JobBatchesRsp;
 use App\Models\Submission;
 use App\Models\TempRegHistory;
 use App\Models\xPersonal;
+use App\Models\xService;
 use App\Services\AppiontmentService;
 use App\Services\ApplicantHiringService;
 use App\Services\EmployeeService;
@@ -14,6 +15,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use PhpParser\Node\Expr\Empty_;
 
 class AppointmentController extends Controller
 {
@@ -186,11 +188,18 @@ class AppointmentController extends Controller
                 'line'    => $e->getLine(),
                 'trace'   => $e->getTraceAsString(),
             ]);
-            return  $this->errorMessage([
-                        'message' => 'Failed to retrieve appointment list',
-                        'line' => $e->getLine(),
-                        'error' => $e->getMessage(),
-                    ], 500);
+
+            return $this->errorMessage('Failed to retrieve appointment list', 500);
         }
+    }
+
+    public function effectiveDateList()
+    {
+        $date = xService::select('effectiveDate')->whereNotNull('effectiveDate')->where('effectiveDate', '!=', '')
+        ->distinct()->orderBy('effectiveDate', 'asc')->get();
+        if ($date->isEmpty()) {
+            return $this->infoMessage('No effective dates found', 200);
+        }
+        return $this->successMessage($date, 'Successful', 200);
     }
 }

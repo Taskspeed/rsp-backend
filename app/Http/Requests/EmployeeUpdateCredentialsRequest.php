@@ -34,13 +34,12 @@ class EmployeeUpdateCredentialsRequest extends FormRequest
 
 
             // tempreg
-
             'sepdate' => 'nullable|date_format:Y-m-d',
             'sepcause' => 'nullable|string',
             'vicename' => 'nullable|string',
             'vicecause' => 'nullable|string',
             'renew' => 'nullable|string',
-        
+            'deliberation_date' => 'nullable|date_format:Y-m-d',
 
             // //xservice
             // 'FromDate' => 'required|date',
@@ -57,7 +56,7 @@ class EmployeeUpdateCredentialsRequest extends FormRequest
             'SupPosition'       => 'nullable|string',
             'HSupPosition'      => 'nullable|string',
             'Tool'              => 'nullable|string',
-            'deliberation_date' => 'nullable|date_format:Y-m-d',
+          
 
 
             'Contact1'          => 'nullable|integer',

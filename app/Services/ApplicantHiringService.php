@@ -4,7 +4,9 @@ namespace App\Services;
 
 use App\Mail\EmailApi;
 use App\Models\JobBatchesRsp;
+use App\Models\OnCriteriaJob;
 use App\Models\Submission;
+use App\Models\TempRegAppointmentReorgExt;
 use App\Models\TempRegHistory;
 use App\Models\xService;
 use Carbon\Carbon;
@@ -657,21 +659,21 @@ class ApplicantHiringService
 
         $Division = DB::table('yDivision')
             ->where('Descriptions', $jobPost->Division)
-            ->orWhere('Codes', $jobPost->Division)
+            // ->orWhere('Codes', $jobPost->Division)
             ->first();
 
         $DivCode = $Division->Codes ?? '00000';
 
         $Section = DB::table('ySection')
             ->where('Descriptions', $jobPost->Section)
-            ->orWhere('Codes', $jobPost->Section)
+            // ->orWhere('Codes', $jobPost->Section)
             ->first();
 
         $SecCode = $Section->Codes ?? '00000';
 
         $Unit = DB::table('yUnit')
             ->where('Descriptions', $jobPost->Unit)
-            ->orWhere('Codes', $jobPost->Unit)
+            // ->orWhere('Codes', $jobPost->Unit)
             ->first();
 
         $UnitCode =    $Unit->Codes ?? '00000';
@@ -772,6 +774,74 @@ class ApplicantHiringService
             'sepcause' =>  $this->upper($sepcause),
             'vicename' =>  $this->upper($vicename),
             'vicecause' =>  $this->upper($vicecause),
+            'submission_id' => $submissionId
+
+        ]);
+
+        // get the temRegExt
+        $temPregExt = DB::table('vwPositiondescription')
+        ->where('Designation', $jobPost->Position)
+        ->orderBy('ID', 'desc')
+        ->first();
+
+        // qs of jobpost
+        $qs = OnCriteriaJob::where('job_batches_rsp_id',$jobPost->id)->first();
+
+        
+        DB::table('tempRegAppointmentReorgExt')->insert([
+            // 'ID'            => $nextId,
+            'ControlNo'     => $controlNo,
+            'PresAppro'         =>  $temPregExt->PresAppro ?? null,
+            'PrevAppro'         => $temPregExt->PrevAppro ?? null,
+            'SalAuthorized'     => $rateMon !== null ? number_format($rateMon, 2) . ' / mo.' : null,
+            'OtherComp'         => $temPregExt->OtherComp ?? null,
+            'SupPosition'       => null,
+            'HSupPosition'      => null,
+            'Tool'              => $temPregExt->Tool ?? null,
+
+            'Contact1'          => $temPregExt->Contact1 ?? null,
+            'Contact2'          => $temPregExt->Contact2 ?? null,
+            'Contact3'          => $temPregExt->Contact3 ?? null,
+            'Contact4'          => $temPregExt->Contact4 ?? null,
+            'Contact5'          => $temPregExt->Contact5 ?? null,
+            'Contact6'          => $temPregExt->Contact6 ?? null,
+            'ContactOthers'     => $temPregExt->ContactOthers ?? null,
+
+            'Working1'          => $temPregExt->Working1 ?? null,
+            'Working2'          => $temPregExt->Working2 ?? null,
+            'WorkingOthers'     => $temPregExt->WorkingOthers ?? null,
+
+            'DescriptionSection'   => $temPregExt->DescriptionSection ?? null,
+            'DescriptionFunction'  => $temPregExt->DescriptionFunction?? null,
+
+            'StandardEduc'      => $qs->Education ?? null,
+            'StandardExp'       => $qs->Experience ?? null,
+            'StandardTrain'     => $qs->Training ?? null,
+            'StandardElig'      => $qs->Eligibility ?? null,
+
+            'Supervisor'        => null,
+
+            'Core1'             => $temPregExt->Core1 ?? null,
+            'Core2'             => $temPregExt->Core2 ?? null,
+            'Core3'             => $temPregExt->Core3 ?? null,
+
+            'Corelevel1'        => $temPregExt->Corelevel1 ?? null,
+            'Corelevel2'        => $temPregExt->Corelevel2 ?? null,
+            'Corelevel3'        => $temPregExt->Corelevel3 ?? null,
+            'Corelevel4'        => $temPregExt->Corelevel4 ?? null,
+
+            'Leader1'           => $temPregExt->Leader1 ?? null,
+            'Leader2'           => $temPregExt->Leader2 ?? null,
+            'Leader3'           => $temPregExt->Leader3 ?? null,
+            'Leader4'           => $temPregExt->Leader4 ?? null,
+
+            'leaderlevel1'      => $temPregExt->leaderlevel1 ?? null,
+            'leaderlevel2'      => $temPregExt->leaderlevel2 ?? null,
+            'leaderlevel3'      => $temPregExt->leaderlevel3 ?? null,
+            'leaderlevel4'      => $temPregExt->leaderlevel4 ?? null,
+
+            'structureid'       => null,
+
             'submission_id' => $submissionId
 
         ]);
@@ -926,7 +996,9 @@ class ApplicantHiringService
                 ->where('submission_id', $submissionId)
                 ->delete();
 
-
+            DB::table('tempRegAppointmentReorgExt')
+                ->where('submission_id', $submissionId)
+                ->delete();
 
 
             // Activity log

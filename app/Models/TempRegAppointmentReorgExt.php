@@ -58,6 +58,7 @@ class TempRegAppointmentReorgExt extends Model
         'leaderlevel3',
         'leaderlevel4',
         'structureid',
+        'submission_id'
     ];
 
 

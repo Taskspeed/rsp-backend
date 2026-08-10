@@ -2,7 +2,6 @@
 
 namespace App\Http\Requests;
 
-use App\Rules\FileOrExistingPath;
 use Illuminate\Foundation\Http\FormRequest;
 
 class ApplicationRequest extends FormRequest
@@ -46,8 +45,32 @@ class ApplicationRequest extends FormRequest
             'sss_no' => 'nullable|string',
             'tin_no' => 'nullable|string',
             // 'image_path' => 'nullable|image|mimes:jpg,jpeg,png|max:5120',
-            
-            'image_path' => ['nullable', new FileOrExistingPath(['jpg', 'jpeg', 'png'])],
+            'image_path' => [
+                'nullable',
+                function ($attribute, $value, $fail) {
+                    if ($value instanceof \Illuminate\Http\UploadedFile) {
+                        // validate as file
+                        $validExt = ['jpg', 'jpeg', 'png', 'pdf'];
+                        if (!in_array(strtolower($value->getClientOriginalExtension()), $validExt)) {
+                            $fail('Invalid file type.');
+                            return;
+                        }
+                        if ($value->getSize() > 5120 * 1024) {
+                            $fail('File too large.');
+                            return;
+                        }
+                    } elseif (is_string($value)) {
+                        // existing path na, pumasa lang basta valid extension
+                        $validExt = ['jpg', 'jpeg', 'png', 'pdf'];
+                        $ext = strtolower(pathinfo($value, PATHINFO_EXTENSION));
+                        if (!in_array($ext, $validExt)) {
+                            $fail('Invalid file type.');
+                        }
+                    } else {
+                        $fail('Invalid attachment.');
+                    }
+                },
+            ],
 
 
             'civil_status' => 'nullable|string',
@@ -124,7 +147,32 @@ class ApplicationRequest extends FormRequest
             'school.*.year_graduated' => ['nullable', 'regex:/^[0-9]{4}$/'],
             'school.*.scholarship' => 'nullable|string',
             'school.*.level' => 'nullable|string',
-            'school.*.attachment_path' => ['nullable', new FileOrExistingPath(['jpg', 'jpeg', 'png', 'pdf'])],
+            'school.*.attachment_path' =>  [
+                'nullable',
+                function ($attribute, $value, $fail) {
+                    if ($value instanceof \Illuminate\Http\UploadedFile) {
+                        // validate as file
+                        $validExt = ['jpg', 'jpeg', 'png', 'pdf'];
+                        if (!in_array(strtolower($value->getClientOriginalExtension()), $validExt)) {
+                            $fail('Invalid file type.');
+                            return;
+                        }
+                        if ($value->getSize() > 5120 * 1024) {
+                            $fail('File too large.');
+                            return;
+                        }
+                    } elseif (is_string($value)) {
+                        // existing path na, pumasa lang basta valid extension
+                        $validExt = ['jpg', 'jpeg', 'png', 'pdf'];
+                        $ext = strtolower(pathinfo($value, PATHINFO_EXTENSION));
+                        if (!in_array($ext, $validExt)) {
+                            $fail('Invalid file type.');
+                        }
+                    } else {
+                        $fail('Invalid attachment.');
+                    }
+                },
+            ],
 
             // 'school_name.*.graduated'=> 'nullable|string',
 
@@ -137,7 +185,32 @@ class ApplicationRequest extends FormRequest
             'training.*.number_of_hours' => 'nullable|integer',
             'training.*.type' => 'nullable|string',
             'training.*.conducted_by' => 'nullable|string',
-            'training.*.attachment_path' => ['nullable', new FileOrExistingPath(['jpg', 'jpeg', 'png', 'pdf'])],
+            'training.*.attachment_path' =>  [
+                'nullable',
+                function ($attribute, $value, $fail) {
+                    if ($value instanceof \Illuminate\Http\UploadedFile) {
+                        // validate as file
+                        $validExt = ['jpg', 'jpeg', 'png', 'pdf'];
+                        if (!in_array(strtolower($value->getClientOriginalExtension()), $validExt)) {
+                            $fail('Invalid file type.');
+                            return;
+                        }
+                        if ($value->getSize() > 5120 * 1024) {
+                            $fail('File too large.');
+                            return;
+                        }
+                    } elseif (is_string($value)) {
+                        // existing path na, pumasa lang basta valid extension
+                        $validExt = ['jpg', 'jpeg', 'png', 'pdf'];
+                        $ext = strtolower(pathinfo($value, PATHINFO_EXTENSION));
+                        if (!in_array($ext, $validExt)) {
+                            $fail('Invalid file type.');
+                        }
+                    } else {
+                        $fail('Invalid attachment.');
+                    }
+                },
+            ],
 
             // work-experience
             'experience' => 'nullable|array',
@@ -160,8 +233,33 @@ class ApplicationRequest extends FormRequest
             'experience.*.salary_grade' => 'nullable|string',
             'experience.*.status_of_appointment' => 'nullable|string',
             'experience.*.government_service' => 'nullable|string',
-            // 'experience.*.attachment_path' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
-            'experience.*.attachment_path' => ['nullable', new FileOrExistingPath(['jpg', 'jpeg', 'png', 'pdf'])],
+            'experience.*.attachment_path' => [
+                'nullable',
+                function ($attribute, $value, $fail) {
+                    if ($value instanceof \Illuminate\Http\UploadedFile) {
+                        // validate as file
+                        $validExt = ['jpg', 'jpeg', 'png', 'pdf'];
+                        if (!in_array(strtolower($value->getClientOriginalExtension()), $validExt)) {
+                            $fail('Invalid file type.');
+                            return;
+                        }
+                        if ($value->getSize() > 5120 * 1024) {
+                            $fail('File too large.');
+                            return;
+                        }
+                    } elseif (is_string($value)) {
+                        // existing path na, pumasa lang basta valid extension
+                        $validExt = ['jpg', 'jpeg', 'png', 'pdf'];
+                        $ext = strtolower(pathinfo($value, PATHINFO_EXTENSION));
+                        if (!in_array($ext, $validExt)) {
+                            $fail('Invalid file type.');
+                        }
+                    } else {
+                        $fail('Invalid attachment.');
+                    }
+                },
+            ],
+            // 'experience.*.attachment_path' => ['nullable', new FileOrExistingPath(['jpg', 'jpeg', 'png', 'pdf'])],
 
             // voluntary
             'voluntary' => 'nullable|array',
@@ -180,7 +278,32 @@ class ApplicationRequest extends FormRequest
             'eligibility.*.place_of_examination' => 'nullable|string',
             'eligibility.*.license_number' => 'nullable|string',
             'eligibility.*.date_of_validity' => 'nullable|date_format:d/m/Y',
-            'eligibility.*.attachment_path' => ['nullable', new FileOrExistingPath(['jpg', 'jpeg', 'png', 'pdf'])],
+            'eligibility.*.attachment_path' => [
+                'nullable',
+                function ($attribute, $value, $fail) {
+                    if ($value instanceof \Illuminate\Http\UploadedFile) {
+                        // validate as file
+                        $validExt = ['jpg', 'jpeg', 'png', 'pdf'];
+                        if (!in_array(strtolower($value->getClientOriginalExtension()), $validExt)) {
+                            $fail('Invalid file type.');
+                            return;
+                        }
+                        if ($value->getSize() > 5120 * 1024) {
+                            $fail('File too large.');
+                            return;
+                        }
+                    } elseif (is_string($value)) {
+                        // existing path na, pumasa lang basta valid extension
+                        $validExt = ['jpg', 'jpeg', 'png', 'pdf'];
+                        $ext = strtolower(pathinfo($value, PATHINFO_EXTENSION));
+                        if (!in_array($ext, $validExt)) {
+                            $fail('Invalid file type.');
+                        }
+                    } else {
+                        $fail('Invalid attachment.');
+                    }
+                },
+            ],
 
 
 
@@ -250,11 +373,61 @@ class ApplicationRequest extends FormRequest
 
             // insert image education,training,experience
             'other_document'             => 'nullable|array',
-            'other_document.*.document' => ['nullable', new FileOrExistingPath(['jpg', 'jpeg', 'png', 'pdf'])],
+            'other_document.*.document' => [
+                'nullable',
+                function ($attribute, $value, $fail) {
+                    if ($value instanceof \Illuminate\Http\UploadedFile) {
+                        // validate as file
+                        $validExt = ['jpg', 'jpeg', 'png', 'pdf','doc','docx'];
+                        if (!in_array(strtolower($value->getClientOriginalExtension()), $validExt)) {
+                            $fail('Invalid file type.');
+                            return;
+                        }
+                        if ($value->getSize() > 5120 * 1024) {
+                            $fail('File too large.');
+                            return;
+                        }
+                    } elseif (is_string($value)) {
+                        // existing path na, pumasa lang basta valid extension
+                        $validExt = ['jpg', 'jpeg', 'png', 'pdf'];
+                        $ext = strtolower(pathinfo($value, PATHINFO_EXTENSION));
+                        if (!in_array($ext, $validExt)) {
+                            $fail('Invalid file type.');
+                        }
+                    } else {
+                        $fail('Invalid attachment.');
+                    }
+                },
+            ],
 
             // pds
-            'pds'          => 'required|array',
-            'pds.*.pds_file' => ['required', new FileOrExistingPath(['jpg', 'jpeg', 'png', 'pdf', 'doc','docx'])],
+            'pds'          => 'nullable|array',
+            'pds.*.pds_file' => [
+                'nullable',
+                function ($attribute, $value, $fail) {
+                    if ($value instanceof \Illuminate\Http\UploadedFile) {
+                        // validate as file
+                        $validExt = ['jpg', 'jpeg', 'png', 'pdf','doc','docx'];
+                        if (!in_array(strtolower($value->getClientOriginalExtension()), $validExt)) {
+                            $fail('Invalid file type.');
+                            return;
+                        }
+                        if ($value->getSize() > 5120 * 1024) {
+                            $fail('File too large.');
+                            return;
+                        }
+                    } elseif (is_string($value)) {
+                        // existing path na, pumasa lang basta valid extension
+                          $validExt = ['jpg', 'jpeg', 'png', 'pdf','doc','docx'];
+                        $ext = strtolower(pathinfo($value, PATHINFO_EXTENSION));
+                        if (!in_array($ext, $validExt)) {
+                            $fail('Invalid file type.');
+                        }
+                    } else {
+                        $fail('Invalid attachment.');
+                    }
+                },
+            ],
 
 
         ];

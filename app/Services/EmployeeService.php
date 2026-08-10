@@ -70,9 +70,9 @@ class EmployeeService
     $xPersonal = DB::table('xPersonal')
         ->where('ControlNo', $controlNo)
         ->update([
-            'Surname' => $validated['Surname'] ?? null,
-            'Firstname' => $validated['Firstname'] ?? null,
-            'Middlename' => $validated['Middlename'] ?? null,
+            // 'Surname' => $validated['Surname'] ?? null,
+            // 'Firstname' => $validated['Firstname'] ?? null,
+            // 'Middlename' => $validated['Middlename'] ?? null,
             'Sex' => $validated['Sex'] ?? null,
             'CivilStatus' => $validated['CivilStatus'] ?? null,
             'BirthDate' => $validated['BirthDate'] ?? null,
@@ -84,7 +84,7 @@ class EmployeeService
     $employeeFullname = $updatedEmployee->Firstname . ' ' . $updatedEmployee->Surname;
 
     $xtempregRecord = DB::table('tempRegAppointmentReorg')
-        ->where('ControlNo', $controlNo)
+        ->where('ControlNo', $controlNo)    
         ->orderByDesc('ID')
         ->first();
 

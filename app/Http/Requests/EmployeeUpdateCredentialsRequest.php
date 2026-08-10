@@ -23,9 +23,9 @@ class EmployeeUpdateCredentialsRequest extends FormRequest
     {
         return [
             //xPersonal
-            'Surname' => 'required|string',
-            'Firstname' => 'required|string',
-            'MIddlename' => 'nullable|string',
+            // 'Surname' => 'required|string',
+            // 'Firstname' => 'required|string',
+            // 'MIddlename' => 'nullable|string',
             'Sex' => 'nullable|string',
             'CivilStatus' => 'required|string',
             'BirthDate' => 'nullable|date',

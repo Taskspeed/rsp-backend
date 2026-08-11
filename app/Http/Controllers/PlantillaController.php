@@ -213,6 +213,7 @@ class PlantillaController extends Controller
                             'sepdate',
                             'sepcause',
                             'deliberation_date',
+                            'assessment_date'
 
                         ])->latest('ID')->limit(1);
                         // ->orderBy('ID', 'desc'); // specify columns from TempRegAppointmentReorg

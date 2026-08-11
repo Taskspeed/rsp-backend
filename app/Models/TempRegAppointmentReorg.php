@@ -15,7 +15,7 @@ class TempRegAppointmentReorg extends Model
 
     protected $casts = [
         'ControlNo' => 'string',
-        'assessment_date' => 'date:F d, Y',
+        // 'assessment_date' => 'date:F d, Y',
         
     ];
 

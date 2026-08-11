@@ -62,9 +62,9 @@ class TempRegAppointmentReorgExt extends Model
         'signing_date'
     ];
     
-    protected $casts = [
-        'signing_date' =>'date:F d, Y',
-    ];
+    // protected $casts = [
+    //     'signing_date' =>'date:F d, Y',
+    // ];
 
 
     public function xService()

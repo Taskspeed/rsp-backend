@@ -58,7 +58,12 @@ class TempRegAppointmentReorgExt extends Model
         'leaderlevel3',
         'leaderlevel4',
         'structureid',
-        'submission_id'
+        'submission_id',
+        'signing_date'
+    ];
+    
+    protected $casts = [
+        'signing_date' =>'date:F d, Y',
     ];
 
 

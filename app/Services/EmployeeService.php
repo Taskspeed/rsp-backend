@@ -98,6 +98,7 @@ class EmployeeService
                 'vicecause' => $validated['vicecause'] ?? null,
                 'deliberation_date' => $validated['deliberation_date'] ?? null,
                 'renew' => $validated['renew'] ?? null,
+               
             ]);
 
         // re-fetch para makuha ang FRESH data after update
@@ -153,6 +154,7 @@ class EmployeeService
         'leaderlevel3'     => $validated['leaderlevel3'] ?? null,
         'leaderlevel4'     => $validated['leaderlevel4'] ?? null,
         'structureid'      => $validated['structureid'] ?? null,
+        'signing_date' => $validated['signing_date'] ?? null,
     ];
 
     if ($tempregExtRecord) {

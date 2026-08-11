@@ -13,6 +13,12 @@ class EmployeeUpdateCredentialsRequest extends FormRequest
     {
         return true;
     }
+      protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'signing_date' => $this->input('signingDate'),
+        ]);
+    }
 
     /**
      * Get the validation rules that apply to the request.
@@ -101,6 +107,7 @@ class EmployeeUpdateCredentialsRequest extends FormRequest
             'leaderlevel4'      => 'nullable|integer',
 
             'structureid'       => 'nullable|integer',
+            'signing_date' => 'nullable|date_format:Y-m-d',
 
 
         ];

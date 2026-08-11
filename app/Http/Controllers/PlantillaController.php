@@ -170,7 +170,7 @@ class PlantillaController extends Controller
     public function getAllData($ControlNo)
     {
         try {
-            $data = xService::select(['ControlNo', 'FromDate', 'ToDate', 'Designation', 'Status', 'Office', 'RateYear', 'RateDay', 'RateMon','effectiveDate'])->latest('FromDate', 'ToDate')->limit(1) // specify columns from xService
+            $data = xService::select(['ControlNo', 'FromDate', 'ToDate', 'Designation', 'Status', 'Office', 'RateYear', 'RateDay', 'RateMon', 'effectiveDate'])->latest('FromDate', 'ToDate')->limit(1) // specify columns from xService
                 ->with([
 
                     'xPersonal' => function ($query) {
@@ -213,7 +213,7 @@ class PlantillaController extends Controller
                             'sepdate',
                             'sepcause',
                             'deliberation_date',
-                         
+
                         ])->latest('ID')->limit(1);
                         // ->orderBy('ID', 'desc'); // specify columns from TempRegAppointmentReorg
                     },
@@ -302,53 +302,52 @@ class PlantillaController extends Controller
                 ->where('ControlNo', $ControlNo)
                 ->first();
 
-         // ── Kunin ang latest tempRegAppointments record (Collection kasi hasMany) ──
-        $tempReg = $data->tempRegAppointments->first();
+            // ── Kunin ang latest tempRegAppointments record (Collection kasi hasMany) ──
+            $tempReg = $data->tempRegAppointments->first();
 
-        // ── Kunin ang current office ng employee ──────────────────────
-        // Priority: tempReg->NewOffice > tempReg->Office > plantilla->office
-        $employeeOffice = $tempReg->Office
+            // ── Kunin ang current office ng employee ──────────────────────
+            // Priority: tempReg->NewOffice > tempReg->Office > plantilla->office
+            $employeeOffice = $tempReg->Office
 
-            ?? null;
+                ?? null;
 
-        $officeHead = null;
+            $officeHead = null;
 
-        if ($employeeOffice) {
-            $officeHead = vwplantillastructure::select('ControlNo', 'Name4', 'office', 'position')
-                ->where('office', $employeeOffice)
-                ->where('position', 'CITY GOVERNMENT DEPARTMENT HEAD I')
-                ->first();
-        }
-
-        // ── Determine Employment Type base sa Status ng tempReg ──────────
-        $employmentType = null;
-
-        if ($tempReg) {
-            $status = strtoupper(trim($tempReg->Status ?? ''));
-
-            if ($status === 'REGULAR') {
-                $employmentType = 'PERMANENT';
-            } elseif ($status === 'ELECTIVE') {
-                $employmentType = 'TEMPORARY';
+            if ($employeeOffice) {
+                $officeHead = vwplantillastructure::select('ControlNo', 'Name4', 'office', 'position')
+                    ->where('office', $employeeOffice)
+                    ->where('position', 'CITY GOVERNMENT DEPARTMENT HEAD I')
+                    ->first();
             }
 
-            // idagdag sa tempReg object mismo para makasama sa response
-            $tempReg->employment_type = $employmentType;
+            // ── Determine Employment Type base sa Status ng tempReg ──────────
+            $employmentType = null;
+
+            if ($tempReg) {
+                $status = strtoupper(trim($tempReg->Status ?? ''));
+                $status = preg_replace('/[^A-Z]/', '', $status); // alisin lahat ng di-letra (tilde, dash, etc.)
+
+                $employmentType = match ($status) {
+                    'REGULAR' => 'PERMANENT',
+                    'ELECTIVE' => 'TEMPORARY',
+                    default => null,
+                };
+
+                $tempReg->employment_type = $employmentType;
+            }
+            $user = Auth::user();
+
+            $this->activityLogService->logEmployeeAppointment($user, $data);
+
+            return response()->json([
+                $data,
+                $officeHead,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to fetch data',
+                'error'   => $e->getMessage(),
+            ], 500);
         }
-
-        $user = Auth::user();
-
-        $this->activityLogService->logEmployeeAppointment($user, $data);
-
-        return response()->json([
-             $data,
-            $officeHead,
-        ]);
-    } catch (\Exception $e) {
-        return response()->json([
-            'message' => 'Failed to fetch data',
-            'error'   => $e->getMessage(),
-        ], 500);
     }
-}
 }

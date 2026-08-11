@@ -98,7 +98,7 @@ class EmployeeService
                 'vicecause' => $validated['vicecause'] ?? null,
                 'deliberation_date' => $validated['deliberation_date'] ?? null,
                 'renew' => $validated['renew'] ?? null,
-               
+                'assessment_date' => $validated['assessment_date'] ?? null,
             ]);
 
         // re-fetch para makuha ang FRESH data after update

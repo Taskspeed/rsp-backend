@@ -15,11 +15,14 @@ class TempRegAppointmentReorg extends Model
 
     protected $casts = [
         'ControlNo' => 'string',
+        'assessment_date' => 'date:F d, Y',
+        
     ];
 
     protected $fillable = [
         'deliberation_date',
-        'renew'
+        'renew',
+        'assessment_date'
     ];
     public function vwplantillaStructure()
     {

@@ -46,7 +46,7 @@ class EmployeeUpdateCredentialsRequest extends FormRequest
             'vicecause' => 'nullable|string',
             'renew' => 'nullable|string',
             'deliberation_date' => 'nullable|date_format:Y-m-d',
-
+            'assessment_date' => 'nullable|date_format:Y-m-d',
             // //xservice
             // 'FromDate' => 'required|date',
             // 'ToDate' => 'required|date',

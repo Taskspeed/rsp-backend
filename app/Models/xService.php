@@ -12,6 +12,9 @@ class xService extends Model
 
     protected $fillable = [
         'effectiveDate',
+        'itemNo',
+        'Pages',
+        'StructureID'
     ];
 
     protected $casts = [

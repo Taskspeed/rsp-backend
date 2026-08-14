@@ -308,16 +308,15 @@ class PlantillaController extends Controller
 
             // ── Kunin ang current office ng employee ──────────────────────
             // Priority: tempReg->NewOffice > tempReg->Office > plantilla->office
-            $employeeOffice = $tempReg->Office
-
-                ?? null;
+            $employeeOffice = $tempReg->Office ?? null;
 
             $officeHead = null;
 
+            // ✅ FIXED: Use LIKE with wildcard to match position with parentheses
             if ($employeeOffice) {
                 $officeHead = vwplantillastructure::select('ControlNo', 'Name4', 'office', 'position')
                     ->where('office', $employeeOffice)
-                    ->where('position', 'CITY GOVERNMENT DEPARTMENT HEAD I')
+                    ->where('position', 'LIKE', 'CITY GOVERNMENT DEPARTMENT HEAD I%')  // ✅ Fixed
                     ->first();
             }
 
@@ -347,7 +346,7 @@ class PlantillaController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Failed to fetch data',
-                'error'   => $e->getMessage(),
+                'error' => $e->getMessage(),
             ], 500);
         }
     }

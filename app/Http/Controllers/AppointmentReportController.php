@@ -1134,9 +1134,13 @@ class AppointmentReportController extends Controller
                                 </rt>
                             </ruby>
                             &nbsp;with a compensation rate of
-                            <strong class="underline">{$salaryWords}</strong>
-                            <span>(</span>
-                            <strong class="underline">{$salaryAmount}</strong>
+                            <strong class="underline">
+                            {{ formatSalaryWords(data.MRate) || '(Salary in Words)' }}
+                            </strong>
+                            <span>&nbsp;(P&nbsp;</span>
+                            <strong class="underline">
+                            {{ data.MRate }}
+                            </strong>
                             <span>)</span>
                             pesos per month.
                         </p>

@@ -33,6 +33,7 @@ class xService extends Model
     {
         return $this->hasMany(vwActive::class, 'ControlNo', 'ControlNo');
     }
+
     public function posting_date()
     {
         return $this->hasMany(posting_date::class, 'ControlNo', 'ControlNo');
@@ -42,12 +43,24 @@ class xService extends Model
     {
         return $this->hasMany(xPersonal::class, 'ControlNo', 'ControlNo');
     }
+
     public function tempRegAppointments()
     {
         return $this->hasMany(TempRegAppointmentReorg::class, 'ControlNo', 'ControlNo');
     }
+
     public function tempRegAppointmentReorgExt()
     {
         return $this->hasMany(TempRegAppointmentReorgExt::class, 'ControlNo', 'ControlNo');
+    }
+
+    /**
+     * Get the office head (Department Head) for this service
+     * Uses the Designation column from vwActive
+     */
+    public function officeHead()
+    {
+        return $this->hasMany(vwActive::class, 'Office', 'Office')
+            ->where('Designation', 'LIKE', 'CITY GOVERNMENT DEPARTMENT HEAD I%');
     }
 }

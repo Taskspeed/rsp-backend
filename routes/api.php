@@ -4,6 +4,7 @@ use App\Http\Controllers\ApplicantExamScoreController;
 use App\Http\Controllers\ApplicantSubmissionController;
 use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\AppointmentController;
+use App\Http\Controllers\AppointmentReportController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CriteriaController;
 use App\Http\Controllers\DashboardController;
@@ -40,7 +41,19 @@ use Illuminate\Support\Facades\Route;
 //     return "Free storage space: {$freeMB} MB";
 // });
 
+// api.php
+Route::get('/storage-cors/{path}', function ($path) {
+    $fullPath = storage_path('app/public/' . $path);
 
+    if (!file_exists($fullPath)) {
+        abort(404);
+    }
+
+    return response()->file($fullPath, [
+        'Access-Control-Allow-Origin' => '*', // o specific origin
+        'Access-Control-Allow-Methods' => 'GET',
+    ]);
+})->where('path', '.*');
 
 Route::get('employee/list', [AppointmentController::class, 'employee']); // employe list
 
@@ -152,13 +165,14 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/jobpost', [AppointmentController::class, 'jobPost']);
         Route::get('/', [AppointmentController::class, 'findAppointment']);
         Route::delete('/delete/{ControlNo}', [AppointmentController::class, 'deleteControlNo']);
-        Route::post('/', [AppointmentController::class, 'appiontment']); // manual appointment
+        Route::post('/', [AppointmentController::class, 'appiontment']);
         Route::get('/position', [AppointmentController::class, 'position']);
-        Route::get('/vice/name/{position}/{status}', [AppointmentController::class, 'getEmployeePreviousDesignation']);
+        // Move specific routes BEFORE parameterized routes
         Route::get('/advance/list', [AppointmentController::class, 'appointmentListAdvance']);
         Route::get('/effective/date/list', [AppointmentController::class, 'effectiveDateList']);
         Route::get('/deliberation/date/list', [AppointmentController::class, 'deliberationDateList']);
-
+        // Parameterized route should be LAST
+        Route::get('/vice/name/{position}/{status}', [AppointmentController::class, 'getEmployeePreviousDesignation']);
     });
 
     Route::prefix('vw-Active')->group(function () {
@@ -224,7 +238,11 @@ Route::middleware('auth:sanctum')->group(function () {
         // Route::get('/officesv2', [PlantillaController::class, 'offices']);
     });
 
+    // Appoinment Report (Appointment, Certification, and Position Description)
 
+    Route::get('/report/appointment/{ControlNo}', [AppointmentReportController::class, 'generateReport'])->name('report.appointment');
+    Route::get('/generate-certification-report/{ControlNo}', [AppointmentReportController::class, 'generateCertificationReport']);
+    Route::get('/generate-position-description-report/{ControlNo}', [AppointmentReportController::class, 'generatePositionDescriptionReport']);
 
     Route::prefix('applicant')->group(function () {
         // routes/api.php
@@ -460,12 +478,12 @@ Route::middleware('auth:sanctum')->group(function () {
 
     });
 
-      Route::prefix('re-assign')->group(function () {
+    Route::prefix('re-assign')->group(function () {
         Route::post('/store', [EmployeeReAssignController::class, 'storeEmployeeReAssign']);
         Route::put('/update/{employeeReAssignId}', [EmployeeReAssignController::class, 'updateEmployeeReAssign']);
         Route::put('/return/{employeeReAssignId}', [EmployeeReAssignController::class, 'returnEmployeeReAssign']);
         Route::get('with/{office}', [OfficeController::class, 'employeeWithReAssign']);
-       Route::get('/{office}', [OfficeController::class, 'getEmployee']);
+        Route::get('/{office}', [OfficeController::class, 'getEmployee']);
     });
 
     // office library
@@ -482,21 +500,5 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/structure/delete/{structureId}', [OfficeController::class, 'structureDelete']);
 
     });
-
-    // api.php
-Route::get('/storage-cors/{path}', function ($path) {
-    $fullPath = storage_path('app/public/' . $path);
-
-    if (!file_exists($fullPath)) {
-        abort(404);
-    }
-
-    return response()->file($fullPath, [
-        'Access-Control-Allow-Origin' => '*', // o specific origin
-        'Access-Control-Allow-Methods' => 'GET',
-    ]);
-})->where('path', '.*')->withoutMiddleware(['auth:sanctum']);
-
-
 
 });

@@ -34,26 +34,7 @@ use App\Http\Controllers\xPDSController;
 use App\Models\ApplicantExamScore;
 use Illuminate\Support\Facades\Route;
 
-// testing route
-// Route::get('/storage-status', function () {
-//     $storagePath = storage_path('app/public');
-//     $freeMB = round(disk_free_space($storagePath) / 1024 / 1024, 2);
-//     return "Free storage space: {$freeMB} MB";
-// });
 
-// api.php
-Route::get('/storage-cors/{path}', function ($path) {
-    $fullPath = storage_path('app/public/' . $path);
-
-    if (!file_exists($fullPath)) {
-        abort(404);
-    }
-
-    return response()->file($fullPath, [
-        'Access-Control-Allow-Origin' => '*', // o specific origin
-        'Access-Control-Allow-Methods' => 'GET',
-    ]);
-})->where('path', '.*');
 
 Route::get('employee/list', [AppointmentController::class, 'employee']); // employe list
 
@@ -500,5 +481,19 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/structure/delete/{structureId}', [OfficeController::class, 'structureDelete']);
 
     });
+
+    // api.php
+Route::get('/storage-cors/{path}', function ($path) {
+    $fullPath = storage_path('app/public/' . $path);
+
+    if (!file_exists($fullPath)) {
+        abort(404);
+    }
+
+    return response()->file($fullPath, [
+        'Access-Control-Allow-Origin' => '*', // o specific origin
+        'Access-Control-Allow-Methods' => 'GET',
+    ]);
+})->where('path', '.*')->withoutMiddleware(['auth:sanctum']);
 
 });

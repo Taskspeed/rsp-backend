@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\excel\nPersonal_info;
+use App\Models\Submission;
 use App\Traits\ApiResponseTrait;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -51,8 +52,6 @@ class ApplicationController extends Controller
 
 
     // get the pds of the applicant 
-    // get the pds of the applicant 
-    // get the pds of the applicant 
     public function getApplicantPdsExternalApplication(string $email)
     {
         $personalId = nPersonal_info::with([
@@ -72,6 +71,68 @@ class ApplicationController extends Controller
 
         if (!$personalId) {
             return $this->errorMessage('applicant not found', 404);
+        }
+
+        // convert attachment_path (relative storage path) → full accessible URL
+        // sa lahat ng relationships na may attachment_path column
+        $attachmentRelations = ['education', 'work_experience', 'training', 'eligibity'];
+
+        foreach ($attachmentRelations as $relation) {
+            $personalId->{$relation}->each(function ($item) {
+                if (!empty($item->attachment_path)) {
+                    $item->attachment_path = Storage::disk('public')->url($item->attachment_path);
+                }
+            });
+        }
+
+        $categories = ['other_document', 'pds_file'];
+        $file = [];
+
+        foreach ($categories as $category) {
+            $folder = "applicant_files/{$personalId->getKey()}/{$category}";
+
+            if (Storage::disk('public')->exists($folder)) {
+                $file[$category] = collect(Storage::disk('public')->files($folder))
+                    ->map(fn($path) => Storage::disk('public')->url($path))
+                    ->values();
+            } else {
+                $file[$category] = [];
+            }
+        }
+
+        $personalId->setAttribute('file', $file);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'success',
+            'data'    => $personalId,
+        ], 200, [], JSON_UNESCAPED_SLASHES);
+    }
+
+    public function getDataApplicantJobpostApplied(?int $jobPostId = null, ?int $nPersonalId = null){
+
+        $findData = Submission::where('job_batches_rsp_id',$jobPostId)->where('nPersonalInfo_id',$nPersonalId)->first();
+
+
+         if (!$findData) {
+            return $this->errorMessage('applicant not found', 404);
+        }
+
+       $personalId = nPersonal_info::with([
+            'family',
+            'children',
+            'education',
+            'work_experience',
+            'training',
+            'eligibity',
+            'personal_declarations',
+            'skills',
+            'references'
+        ])
+            ->find($findData->nPersonalInfo_id);
+
+      if (!$personalId) {
+            return $this->errorMessage('applicant data not found', 404);
         }
 
         // convert attachment_path (relative storage path) → full accessible URL

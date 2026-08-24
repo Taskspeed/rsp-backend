@@ -276,6 +276,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // get external pds
         Route::get('/application/pds/external/{email}', [ApplicationController::class, 'getApplicantPdsExternalApplication'])->withoutMiddleware(['auth:sanctum']);
+
+        Route::get('/application/data/{jobPostId}/{nPersonalId}', [ApplicationController::class, 'getDataApplicantJobpostApplied'])->withoutMiddleware(['auth:sanctum']);
+
     });
 
     Route::prefix('job-batches-rsp')->group(function () {
@@ -437,7 +440,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/job/delete/{id}', [JobBatchesRspController::class, 'deleteJobPost']); // delete job post  with the criteria and pdf
     Route::get('/job-post', [JobBatchesRspController::class, 'jobPost']); // fetching all job post
     Route::get('/job-post/{postDate}/{endDate}', [JobBatchesRspController::class, 'jobPostFiltered']);
-
     Route::get('/proxy-image/{submissionId}', [SubmissionController::class, 'getImageInternalApplicant']);
 
 

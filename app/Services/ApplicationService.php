@@ -16,6 +16,8 @@ use App\Models\excel\skill_non_academic;
 use App\Models\excel\Voluntary_work;
 use App\Models\excel\Work_experience;
 use App\Models\JobBatchesRsp;
+use App\Models\OtherDocument;
+use App\Models\Pds;
 use App\Models\Submission;
 use App\Models\vwActive;
 use Carbon\Carbon;
@@ -102,7 +104,7 @@ class ApplicationService
             //             $post_date . " to " .     $end_date  . ").",
             //     ], 422);
             // }
-              // 4. Block if already applied 3 times — pero skip kung update lang ito
+            // 4. Block if already applied 3 times — pero skip kung update lang ito
             // sa isang job post na kasama na sa 3 applications niya (hindi bagong slot).
             // Kung wala pang existing submission sa job post na 'to (bagong application talaga)
             // saka lang natin i-eenforce yung 3-application limit.
@@ -115,7 +117,7 @@ class ApplicationService
             }
 
             DB::beginTransaction();
-            
+
             if (!empty($validatedData['image_path']) && $validatedData['image_path'] instanceof \Illuminate\Http\UploadedFile) {
                 $validatedData['image_path'] = $validatedData['image_path']->store(
                     'temp_images',
@@ -147,7 +149,7 @@ class ApplicationService
                 $message = 'Successfully submitted your application.';
             }
 
-    
+
             // hasMany child tables — safe for both create and update:
             // delete() is a no-op if no rows exist yet (new applicant),
             // and clears stale rows if this is a re-submission (existing applicant)
@@ -160,6 +162,27 @@ class ApplicationService
             skill_non_academic::where('nPersonalInfo_id', $personal->id)->delete();
             references::where('nPersonalInfo_id', $personal->id)->delete();
             Personal_declarations::where('nPersonalInfo_id', $personal->id)->delete();
+
+            $oldDocuments = OtherDocument::where('nPersonalInfo_id', $personal->id)->get();
+
+            foreach ($oldDocuments as $record) {
+                if ($record->document && Storage::disk('public')->exists($record->document)) {
+                    Storage::disk('public')->delete($record->document);
+                }
+            }
+
+            OtherDocument::where('nPersonalInfo_id', $personal->id)->delete();
+            
+            $oldPds = Pds::where('nPersonalInfo_id', $personal->id)->get();
+
+            foreach ($oldPds as $record) {
+
+                if ($record->pds_file && Storage::disk('public')->exists($record->pds_file)) {
+                    Storage::disk('public')->delete($record->pds_file);
+                }
+            }
+
+            Pds::where('nPersonalInfo_id', $personal->id)->delete();
 
             foreach ($validatedData['children'] ?? [] as $child) {
                 Children::create(array_merge($child, ['nPersonalInfo_id' => $personal->id]));
@@ -222,16 +245,7 @@ class ApplicationService
                 Personal_declarations::create(array_merge($personal_declaration, ['nPersonalInfo_id' => $personal->id]));
             }
 
-            foreach ($validatedData['other_document'] ?? [] as $document) {
-                    if (!empty($document['document']) && $document['document'] instanceof \Illuminate\Http\UploadedFile) {
-                        $document['document'] = $document['document']->store(
-                            "applicant_files/{$personal->id}/other_document",
-                            'public'
-                        );
-                    }
-                }
 
-        
             foreach ($validatedData['pds'] ?? [] as $pds) {
                 if (!empty($pds['pds_file']) && $pds['pds_file'] instanceof \Illuminate\Http\UploadedFile) {
                     $pds['pds_file'] = $pds['pds_file']->store(
@@ -239,6 +253,16 @@ class ApplicationService
                         'public'
                     );
                 }
+                Pds::create(array_merge($pds, ['nPersonalInfo_id' => $personal->id]));
+            }
+            foreach ($validatedData['other_document'] ?? [] as $document) {
+                if (!empty($document['document']) && $document['document'] instanceof \Illuminate\Http\UploadedFile) {
+                    $document['document'] = $document['document']->store(
+                        "applicant_files/{$personal->id}/other_document",
+                        'public'
+                    );
+                }
+                OtherDocument::create(array_merge($document, ['nPersonalInfo_id' => $personal->id]));
             }
 
             if (!$existingSubmission) {
@@ -388,6 +412,4 @@ class ApplicationService
 
         return null;
     }
-
-                
 }

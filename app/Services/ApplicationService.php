@@ -316,6 +316,7 @@ class ApplicationService
                 'Position' => $job->Position,
                 'ItemNo' => $job->ItemNo,
                 'isUpdate' => $isUpdate,
+                'date' => now()->format('F d, Y'),
             ]
 
 

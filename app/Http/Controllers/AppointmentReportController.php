@@ -474,7 +474,7 @@ class AppointmentReportController extends Controller
             'Pages' => $tempReg->Pages ?? '',
             'Status' => $tempReg->Status ?? '',
             'mayor' => 'REY T. UY',
-            'vicemayor' => 'VICE MAYOR NAME',
+            'vicemayor' => 'ATTY. EVA LORRAINE E. ESTABILLO',
             'deliberation_date' => $tempReg->deliberation_date ?? null,
             'post_date' => $postingDate->post_date ?? null,
             'end_date' => $postingDate->end_date ?? null,

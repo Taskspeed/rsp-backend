@@ -267,7 +267,7 @@ class AppointmentReportController extends Controller
             'Pages' => $tempReg->Pages ?? '',
             'Status' => $tempReg->Status ?? '',
             'mayor' => 'REY T. UY',
-            'vicemayor' => 'ATTY. EVA LORRAINE E. ESTABILLO',
+           'vicemayor' => 'ATTY. EVA LORRAINE E. ESTABILLO',
             'deliberation_date' => $tempReg->deliberation_date ?? null,
             'post_date' => $postingDate->post_date ?? null,
             'end_date' => $postingDate->end_date ?? null,
@@ -567,7 +567,6 @@ class AppointmentReportController extends Controller
 
         $salaryWords = $this->formatSalaryWords($data['MRate'] ?? null);
         $salaryAmount = $this->formatSalaryAmount($data['MRate'] ?? null);
-        $MRate = $data['MRate'] ?? '';
         $salutation = $this->getSalutation($data['Sex'] ?? '');
         $newDesignation = $data['NewDesignation'] ?? '(Position Title)';
         $employmentType = $data['employmenttype'] ?? 'N/A';
@@ -575,10 +574,6 @@ class AppointmentReportController extends Controller
         $officeLength = mb_strlen($newDesignation);
         $officeWhiteSpace = ($officeLength >= 55 && $officeLength <= 75) ? 'nowrap' : 'normal';
         $debug = " Office: {$newOffice} | Length: {$officeLength} | White-space: {$officeWhiteSpace}";
-
-        $signatoryRepName = $this->getSignatoryRepName($data['NewOffice'] ?? '');
-        $signatoryRepPosition = $this->getSignatoryRepPosition($data['NewOffice'] ?? '');
-        $signatoryRepOffice = $this->getSignatoryRepOffice($data['NewOffice'] ?? '');
 
         $viceCause = !empty($data['vicecause']) ? $data['vicecause'] : 'N/A';
         $viceName = !empty($data['vicename']) ? $data['vicename'] : 'N/A';
@@ -1139,13 +1134,9 @@ class AppointmentReportController extends Controller
                                 </rt>
                             </ruby>
                             &nbsp;with a compensation rate of
-                           <strong class="underline">
-                            {$salaryWords}
-                            </strong>
-                            <span>&nbsp;(P&nbsp;</span>
-                            <strong class="underline">
-                            {$MRate}
-                            </strong>
+                            <strong class="underline">{$salaryWords}</strong>
+                            <span>(</span>
+                            <strong class="underline">{$salaryAmount}</strong>
                             <span>)</span>
                             pesos per month.
                         </p>
@@ -1259,12 +1250,12 @@ class AppointmentReportController extends Controller
                             <div class="signature-container">
                                 <div class="signature">
                                     <div class="signature-name-container">
-                                        <strong class="signature-name">{$signatoryRepName}</strong>
+                                        <strong class="signature-name">EDGAR C. DE GUZMAN</strong>
                                     </div>
                                     <div class="cert-signature-title">
-                                        {$signatoryRepPosition}
+                                        City Administrator
                                         <br />
-                                        Authorized Representative of the {$signatoryRepOffice}
+                                        Authorized Representative of the City Mayor
                                         <br />
                                         Chairperson
                                     </div>
@@ -2929,74 +2920,40 @@ HTML;
         return strtoupper($sex) === 'MALE' ? 'MR.' : 'MS.';
     }
 
-    private function isSanggunianOffice($office)
+    private function getOfficeTitle($office)
     {
-        return (
+        if (
             strpos($office, 'VICE MAYOR') !== false ||
             strpos($office, 'SANGGUNIANG PANLUNGSOD') !== false ||
             strpos($office, 'SANGGUNIAN') !== false
-        );
+        ) {
+            return 'OFFICE OF THE VICE MAYOR';
+        }
+        return 'OFFICE OF THE CITY MAYOR';
     }
 
-    /**
-     * Get office title
-     */
-    private function getOfficeTitle($office)
-    {
-        return $this->isSanggunianOffice($office)
-            ? 'OFFICE OF THE VICE MAYOR'
-            : 'OFFICE OF THE CITY MAYOR';
-    }
-
-    /**
-     * Get signatory name
-     */
     private function getSignatoryName($data)
     {
-        $office = $data['NewOffice'] ?? '';
-        return $this->isSanggunianOffice($office)
-            ? ($data['vicemayor'] ?? 'ATTY. EVA LORRAINE E. ESTABILLO')
-            : ($data['mayor'] ?? 'REY T. UY');
+        if (
+            strpos($data['NewOffice'] ?? '', 'VICE MAYOR') !== false ||
+            strpos($data['NewOffice'] ?? '', 'SANGGUNIANG PANLUNGSOD') !== false ||
+            strpos($data['NewOffice'] ?? '', 'SANGGUNIAN') !== false
+        ) {
+            return $data['vicemayor'] ?? 'VICE MAYOR NAME';
+        }
+        return $data['mayor'] ?? 'REY T. UY';
     }
 
-    /**
-     * Get signatory title
-     */
     private function getSignatoryTitle($office)
     {
-        return $this->isSanggunianOffice($office)
-            ? 'City Vice Mayor'
-            : 'City Mayor';
-    }
-
-    /**
-     * Get signatory representative name
-     */
-    private function getSignatoryRepName($office)
-    {
-        return $this->isSanggunianOffice($office)
-            ? 'DELVIN M. SANTOS'
-            : 'EDGAR C. DE GUZMAN';
-    }
-
-    /**
-     * Get signatory representative position
-     */
-    private function getSignatoryRepPosition($office)
-    {
-        return $this->isSanggunianOffice($office)
-            ? 'Executive Assistant IV'
-            : 'City Administrator';
-    }
-
-    /**
-     * Get signatory representative office
-     */
-    private function getSignatoryRepOffice($office)
-    {
-        return $this->isSanggunianOffice($office)
-            ? 'City Vice Mayor'
-            : 'City Mayor';
+        if (
+            strpos($office, 'VICE MAYOR') !== false ||
+            strpos($office, 'SANGGUNIANG PANLUNGSOD') !== false ||
+            strpos($office, 'SANGGUNIAN') !== false
+        ) {
+            return 'City Vice Mayor';
+        }
+        return 'City Mayor';
     }
 
     private function formatRenew($data)
@@ -3026,14 +2983,14 @@ HTML;
     private function formatDate($dateStr)
     {
         if (empty($dateStr)) {
-            return 'N/A';
+            return '';
         }
 
         try {
             $date = new \DateTime($dateStr);
             return $date->format('d F Y');
         } catch (\Exception $e) {
-            return 'N/A';
+            return '';
         }
     }
 

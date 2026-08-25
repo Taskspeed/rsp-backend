@@ -207,7 +207,6 @@ class PlantillaController extends Controller
                             'Groupcode',
                             'group',
                             'unitcode',
-
                             'vicecause',
                             'vicename',
                             'sepdate',
@@ -306,6 +305,28 @@ class PlantillaController extends Controller
             // ── Kunin ang latest tempRegAppointments record (Collection kasi hasMany) ──
             $tempReg = $data->tempRegAppointments->first();
 
+            // ── Kunin ang current office ng employee ──────────────────────
+            // Priority: tempReg->NewOffice > tempReg->Office > plantilla->office
+            $employeeOffice = $tempReg->Office ?? null;
+            // ── Kunin ang latest/first plantilla record (Collection kasi hasMany) ──
+            $plantillaRecord = $data->plantilla->first();
+
+            $specialOffices = [
+                'OFFICE OF THE CITY MAYOR',
+                'OFFICE OF THE CITY VICE MAYOR / SANGGUNIANG PANLUNGSOD',
+            ];
+
+            $plantillaOffice2 = $plantillaRecord->office2 ?? null;
+
+            if ($tempReg && in_array(trim(strtoupper($employeeOffice ?? '')), $specialOffices)) {
+                $newOffice = $employeeOffice; // default: office
+
+                if (!empty($plantillaOffice2)) {
+                    $newOffice = $plantillaOffice2; // override: office2
+                }
+
+                $tempReg->NewOffice = $newOffice;
+            }
             // ── Kunin ang current office ng employee ──────────────────────
             // Priority: tempReg->NewOffice > tempReg->Office > plantilla->office
             $employeeOffice = $tempReg->Office ?? null;

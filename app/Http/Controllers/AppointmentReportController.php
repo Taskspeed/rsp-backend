@@ -474,7 +474,7 @@ class AppointmentReportController extends Controller
             'Pages' => $tempReg->Pages ?? '',
             'Status' => $tempReg->Status ?? '',
             'mayor' => 'REY T. UY',
-            'vicemayor' => 'VICE MAYOR NAME',
+            'vicemayor' => 'ATTY. EVA LORRAINE E. ESTABILLO',
             'deliberation_date' => $tempReg->deliberation_date ?? null,
             'post_date' => $postingDate->post_date ?? null,
             'end_date' => $postingDate->end_date ?? null,
@@ -2862,10 +2862,10 @@ HTML;
         file_put_contents($tempScript, $script);
 
         $cmd = 'node ' . $tempScript . ' 2>&1';
-        \Log::info('Executing: ' . $cmd);
+        Log::info('Executing: ' . $cmd);
 
         $output = shell_exec($cmd);
-        \Log::info('Output: ' . $output);
+        Log::info('Output: ' . $output);
 
         @unlink($tempHtml);
         @unlink($tempScript);

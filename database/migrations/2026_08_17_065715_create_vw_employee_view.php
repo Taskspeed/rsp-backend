@@ -60,6 +60,9 @@ return new class extends Migration
                     WHEN act.Status = 'CASUAL' AND UPPER(LTRIM(RTRIM(act.Grades))) IN ('C2','C3','C4','C5','C6','C7','C8','C9','D2','D3','D4','D5','D6','D7','D8','D9','E1','E2','E3','E4','E5','E6','E7','E8','E9') THEN '2'
                     ELSE NULL
                 END AS level
+                -- NOTE: walang StructureID/ID linking column sa Source 1 (employee_assigns),
+                -- kaya hindi ma-join sa vwplantillalevel dito. Manatiling NULL ang sg/level
+                -- para sa non-CASUAL na galing sa source na ito.
             FROM employee_assigns ea
             LEFT JOIN employee_reassigns ra 
                 ON ra.control_no = ea.control_no AND ra.active = 1
@@ -93,32 +96,38 @@ return new class extends Migration
                 ps.PageNo                                AS pageNo,
                 ps.ID                                    AS tblStructureID,
                 ps.PositionID                            AS positionID,
-                CASE 
-                    WHEN act2.Status = 'CASUAL' AND UPPER(LTRIM(RTRIM(act2.Grades))) IN ('C1','D1') THEN '10'
-                    WHEN act2.Status = 'CASUAL' AND UPPER(LTRIM(RTRIM(act2.Grades))) IN ('C2','D2') THEN '11'
-                    WHEN act2.Status = 'CASUAL' AND UPPER(LTRIM(RTRIM(act2.Grades))) IN ('C3','D3') THEN '12'
-                    WHEN act2.Status = 'CASUAL' AND UPPER(LTRIM(RTRIM(act2.Grades))) IN ('C4','D4') THEN '13'
-                    WHEN act2.Status = 'CASUAL' AND UPPER(LTRIM(RTRIM(act2.Grades))) IN ('C5','D5') THEN '14'
-                    WHEN act2.Status = 'CASUAL' AND UPPER(LTRIM(RTRIM(act2.Grades))) IN ('C6','D6') THEN '15'
-                    WHEN act2.Status = 'CASUAL' AND UPPER(LTRIM(RTRIM(act2.Grades))) IN ('C7','D7') THEN '16'
-                    WHEN act2.Status = 'CASUAL' AND UPPER(LTRIM(RTRIM(act2.Grades))) IN ('C8','D8') THEN '17'
-                    WHEN act2.Status = 'CASUAL' AND UPPER(LTRIM(RTRIM(act2.Grades))) IN ('C9','D9') THEN '18'
-                    WHEN act2.Status = 'CASUAL' AND UPPER(LTRIM(RTRIM(act2.Grades))) = 'E1' THEN '21'
-                    WHEN act2.Status = 'CASUAL' AND UPPER(LTRIM(RTRIM(act2.Grades))) = 'E2' THEN '22'
-                    WHEN act2.Status = 'CASUAL' AND UPPER(LTRIM(RTRIM(act2.Grades))) = 'E3' THEN '23'
-                    WHEN act2.Status = 'CASUAL' AND UPPER(LTRIM(RTRIM(act2.Grades))) = 'E4' THEN '24'
-                    WHEN act2.Status = 'CASUAL' AND UPPER(LTRIM(RTRIM(act2.Grades))) = 'E5' THEN '25'
-                    WHEN act2.Status = 'CASUAL' AND UPPER(LTRIM(RTRIM(act2.Grades))) = 'E6' THEN '26'
-                    WHEN act2.Status = 'CASUAL' AND UPPER(LTRIM(RTRIM(act2.Grades))) = 'E7' THEN '27'
-                    WHEN act2.Status = 'CASUAL' AND UPPER(LTRIM(RTRIM(act2.Grades))) = 'E8' THEN '28'
-                    WHEN act2.Status = 'CASUAL' AND UPPER(LTRIM(RTRIM(act2.Grades))) = 'E9' THEN '29'
-                    ELSE NULL
-                END AS SG,
-                CASE 
-                    WHEN act2.Status = 'CASUAL' AND UPPER(LTRIM(RTRIM(act2.Grades))) IN ('C1','D1') THEN '1'
-                    WHEN act2.Status = 'CASUAL' AND UPPER(LTRIM(RTRIM(act2.Grades))) IN ('C2','C3','C4','C5','C6','C7','C8','C9','D2','D3','D4','D5','D6','D7','D8','D9','E1','E2','E3','E4','E5','E6','E7','E8','E9') THEN '2'
-                    ELSE NULL
-                END AS SGLevel
+                COALESCE(
+                    CASE 
+                        WHEN act2.Status = 'CASUAL' AND UPPER(LTRIM(RTRIM(act2.Grades))) IN ('C1','D1') THEN '10'
+                        WHEN act2.Status = 'CASUAL' AND UPPER(LTRIM(RTRIM(act2.Grades))) IN ('C2','D2') THEN '11'
+                        WHEN act2.Status = 'CASUAL' AND UPPER(LTRIM(RTRIM(act2.Grades))) IN ('C3','D3') THEN '12'
+                        WHEN act2.Status = 'CASUAL' AND UPPER(LTRIM(RTRIM(act2.Grades))) IN ('C4','D4') THEN '13'
+                        WHEN act2.Status = 'CASUAL' AND UPPER(LTRIM(RTRIM(act2.Grades))) IN ('C5','D5') THEN '14'
+                        WHEN act2.Status = 'CASUAL' AND UPPER(LTRIM(RTRIM(act2.Grades))) IN ('C6','D6') THEN '15'
+                        WHEN act2.Status = 'CASUAL' AND UPPER(LTRIM(RTRIM(act2.Grades))) IN ('C7','D7') THEN '16'
+                        WHEN act2.Status = 'CASUAL' AND UPPER(LTRIM(RTRIM(act2.Grades))) IN ('C8','D8') THEN '17'
+                        WHEN act2.Status = 'CASUAL' AND UPPER(LTRIM(RTRIM(act2.Grades))) IN ('C9','D9') THEN '18'
+                        WHEN act2.Status = 'CASUAL' AND UPPER(LTRIM(RTRIM(act2.Grades))) = 'E1' THEN '21'
+                        WHEN act2.Status = 'CASUAL' AND UPPER(LTRIM(RTRIM(act2.Grades))) = 'E2' THEN '22'
+                        WHEN act2.Status = 'CASUAL' AND UPPER(LTRIM(RTRIM(act2.Grades))) = 'E3' THEN '23'
+                        WHEN act2.Status = 'CASUAL' AND UPPER(LTRIM(RTRIM(act2.Grades))) = 'E4' THEN '24'
+                        WHEN act2.Status = 'CASUAL' AND UPPER(LTRIM(RTRIM(act2.Grades))) = 'E5' THEN '25'
+                        WHEN act2.Status = 'CASUAL' AND UPPER(LTRIM(RTRIM(act2.Grades))) = 'E6' THEN '26'
+                        WHEN act2.Status = 'CASUAL' AND UPPER(LTRIM(RTRIM(act2.Grades))) = 'E7' THEN '27'
+                        WHEN act2.Status = 'CASUAL' AND UPPER(LTRIM(RTRIM(act2.Grades))) = 'E8' THEN '28'
+                        WHEN act2.Status = 'CASUAL' AND UPPER(LTRIM(RTRIM(act2.Grades))) = 'E9' THEN '29'
+                        ELSE NULL
+                    END,
+                    pl.SG
+                ) AS SG,
+                COALESCE(
+                    CASE 
+                        WHEN act2.Status = 'CASUAL' AND UPPER(LTRIM(RTRIM(act2.Grades))) IN ('C1','D1') THEN '1'
+                        WHEN act2.Status = 'CASUAL' AND UPPER(LTRIM(RTRIM(act2.Grades))) IN ('C2','C3','C4','C5','C6','C7','C8','C9','D2','D3','D4','D5','D6','D7','D8','D9','E1','E2','E3','E4','E5','E6','E7','E8','E9') THEN '2'
+                        ELSE NULL
+                    END,
+                    pl.Level
+                ) AS SGLevel
             FROM vwplantillastructure ps
             LEFT JOIN employee_reassigns ra2 
                 ON ra2.control_no = ps.ControlNo AND ra2.active = 1
@@ -126,6 +135,8 @@ return new class extends Migration
                 ON act2.ControlNo = ps.ControlNo
             LEFT JOIN employee_extra_details ext2
                 ON ext2.control_no = ps.ControlNo
+            LEFT JOIN vwplantillalevel pl
+                ON pl.ID = ps.ID
             WHERE ps.ControlNo IS NOT NULL
         ");
     }

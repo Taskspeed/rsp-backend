@@ -706,6 +706,13 @@ class ApplicantHiringService
 
         $renewType = $this->determineRenewType($employeeStatus); // ← idagdag ito
 
+           $structure = DB::table('tblStructureDetails')
+            ->where('ID', $jobPost->tblStructureDetails_ID)
+            ->where('PageNo', $jobPost->PageNo)
+            ->where('ItemNo', $jobPost->ItemNo)
+            ->first();
+
+
         DB::table('xService')->insert([
             'ControlNo'    => $controlNo, // 1
             'FromDate'     => $fromDate->format('Y-m-d H:i:s'), // 1
@@ -735,15 +742,13 @@ class ApplicantHiringService
             'Steps'        => 1,
             'Charges'      => '',
             'effectiveDate'      => $fromDate->format('Y-m-d H:i:s'),
-            'submission_id' => $submissionId
+            'submission_id' => $submissionId,
+            'itemNo'        =>$itemNo,
+            'Pages'         => $pageNo,
+            'StructureID'   => $structure->StructureID ?? null,
         ]);
 
-        $structure = DB::table('tblStructureDetails')
-            ->where('ID', $jobPost->tblStructureDetails_ID)
-            ->where('PageNo', $jobPost->PageNo)
-            ->where('ItemNo', $jobPost->ItemNo)
-            ->first();
-
+     
         //  get the renew 
 
         DB::table('tempRegAppointmentReorg')->insert([

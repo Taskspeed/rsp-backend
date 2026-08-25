@@ -95,6 +95,10 @@
             width: 100%;
             height: 140px;
         }
+        .date {
+            font-size: 11pt;
+            margin: 30px 0 20px 0;
+        }
     </style>
 </head>
 
@@ -105,6 +109,11 @@
 
             <img src="{{ $message->embed(public_path('images/emailHeader.png')) }}" alt="Logo" class="header-image">
 
+        </div>
+
+         <!-- Date -->
+        <div class="date">
+            {{ $date }}
         </div>
 
 

@@ -2866,10 +2866,10 @@ HTML;
         file_put_contents($tempScript, $script);
 
         $cmd = 'node ' . $tempScript . ' 2>&1';
-        \Log::info('Executing: ' . $cmd);
+        Log::info('Executing: ' . $cmd);
 
         $output = shell_exec($cmd);
-        \Log::info('Output: ' . $output);
+        Log::info('Output: ' . $output);
 
         @unlink($tempHtml);
         @unlink($tempScript);

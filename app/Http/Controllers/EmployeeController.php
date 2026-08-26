@@ -3,15 +3,16 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\EmployeeUpdateCredentialsRequest;
-use App\Models\xPersonal;
 use App\Models\Submission;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-
-use function Laravel\Prompts\table;
 use App\Models\vwplantillastructure;
+use App\Models\xPersonal;
 use App\Services\EmployeeService;
+
+use Carbon\Carbon;
+use function Laravel\Prompts\table;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class EmployeeController extends Controller
 {
@@ -35,13 +36,13 @@ class EmployeeController extends Controller
             'data' => $employeeApplications->map(function ($submission) {
                 return [
                     'submission_id' => $submission->id,
-                    // 'status'        => $submission->status,
-                    // SHOW ONLY IF EMAILED
                     'status' => $submission->is_emailed  // added condition to fetch that status of the applicant email first before the status
                         ? $submission->status
                         : 'Pending',
                     'position'      => $submission->jobPost->Position ?? null,
                     'office'        => $submission->jobPost->Office ?? null,
+                    'post_date' => Carbon::parse($submission->jobPost->post_date)->format('F d, Y') ?? null,
+                    'end_date'     => Carbon::parse($submission->jobPost->end_date)->format('F d, Y') ?? null,
                     'applied_at'    => $submission->created_at,
                 ];
             })

@@ -2929,12 +2929,9 @@ HTML;
         return strtoupper($sex) === 'MALE' ? 'MR.' : 'MS.';
     }
 
-<<<<<<< HEAD
-=======
     /**
      * Check if office is Sanggunian
      */
->>>>>>> 781c4269a331050a85096fd45b872295e8927bcc
     private function isSanggunianOffice($office)
     {
         return (
@@ -2973,39 +2970,6 @@ HTML;
         return $this->isSanggunianOffice($office)
             ? 'City Vice Mayor'
             : 'City Mayor';
-<<<<<<< HEAD
-    }
-
-    /**
-     * Get signatory representative name
-     */
-    private function getSignatoryRepName($office)
-    {
-        return $this->isSanggunianOffice($office)
-            ? 'DELVIN M. SANTOS'
-            : 'EDGAR C. DE GUZMAN';
-    }
-
-    /**
-     * Get signatory representative position
-     */
-    private function getSignatoryRepPosition($office)
-    {
-        return $this->isSanggunianOffice($office)
-            ? 'Executive Assistant IV'
-            : 'City Administrator';
-    }
-
-    /**
-     * Get signatory representative office
-     */
-    private function getSignatoryRepOffice($office)
-    {
-        return $this->isSanggunianOffice($office)
-            ? 'City Vice Mayor'
-            : 'City Mayor';
-=======
->>>>>>> 781c4269a331050a85096fd45b872295e8927bcc
     }
 
     /**

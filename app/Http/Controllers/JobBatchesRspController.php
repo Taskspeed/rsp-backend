@@ -9,7 +9,8 @@ use App\Http\Requests\JobPostUpdateRequest;
 
 use App\Models\Job_batches_user;
 use App\Models\JobBatchesRsp;
-
+use App\Models\vwplantillastructure;
+use App\Models\vwPlantillaStructureAsOf;
 use App\Models\xService;
 use App\Services\ApplicantService;
 use App\Services\JobPostService;
@@ -401,4 +402,58 @@ class JobBatchesRspController extends Controller
 
         return $this->jobPostService->qualificationRemarks($jobPostId, $submissionId);
     }
+
+    public function getListOfPost(int $tblStructureId)
+    {
+        $jobs = JobBatchesRsp::where('tblStructureDetails_ID', $tblStructureId)
+            ->orderByDesc('post_date') // pinakabago sa unahan
+            ->get();
+
+        return response()->json([
+            'latest' => $jobs->first(),          // unang item = latest job post
+            'old_posts' => $jobs->slice(1)->values(), // lahat ng natitira = old job posts
+        ]);
+    }
+
+   public function allowedToOpen(string $officeName)
+{
+    $structures = vwplantillastructure::select('ControlNo', 'ID')->where('office', $officeName)->get();
+
+    $result = [];
+
+    foreach ($structures as $structure) {
+
+        $latestJob = JobBatchesRsp::where('tblStructureDetails_ID', $structure->ID)
+            ->orderByDesc('post_date')
+            ->first();
+
+        // May ongoing job post pa (hindi pa Occupied) -> laging blocked
+        if ($latestJob && $latestJob->status !== 'Occupied') {
+            $result[] = [
+                'tblStructureDetails_ID'         => $structure->ID,
+                'ControlNo'  => $structure->ControlNo,
+                'can_create' => false,
+                'reason'     => 'on-going jobpost cant create',
+                'latest_job' => $latestJob,
+            ];
+            continue;
+        }
+
+        // Wala pang job post, o Occupied na ang latest job post
+        // -> parehong basehan na lang: may ControlNo ba (occupied) sa plantilla?
+        $canCreate = is_null($structure->ControlNo);
+
+        $result[] = [
+            'tblStructureDetails_ID'         => $structure->ID,
+            'ControlNo'  => $structure->ControlNo,
+            'can_create' => $canCreate,
+            'reason'     => $canCreate
+                ? 'Vacant (walang ControlNo), pwede ma-create'
+                : 'May ControlNo (occupied), hindi pwede',
+            'latest_job' => $latestJob,
+        ];
+    }
+
+    return response()->json($result);
+}
 }

@@ -133,4 +133,18 @@ class EmailController extends Controller
 
         return $result;
     }
+
+     // for the unqualified applicant that send an  the qualification and remarks
+    public function applicantNotChosen(Request $request, ScheduleService $scheduleService)
+    {
+        $validated = $request->validate([
+            'job_batches_rsp_id' => 'required|exists:job_batches_rsp,id',
+        ]);
+
+        $result = $scheduleService->sendEmailApplicantNotChosenBatch($validated,$request);
+
+
+        return $result;
+    }
+
 }

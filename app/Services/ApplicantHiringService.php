@@ -883,12 +883,12 @@ class ApplicantHiringService
                 ], 404);
             }
 
-            if (Carbon::now()->isAfter($rollback->expired_at)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Rollback window has expired (3 days).',
-                ], 403);
-            }
+            // if (Carbon::now()->isAfter($rollback->expired_at)) {
+            //     return response()->json([
+            //         'success' => false,
+            //         'message' => 'Rollback window has expired (3 days).',
+            //     ], 403);
+            // }
 
             // Restore submission status
             Submission::where('id', $submissionId)

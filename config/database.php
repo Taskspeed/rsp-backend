@@ -112,6 +112,21 @@ return [
             'trust_server_certificate' => env('DB_TRUST_SERVER_CERTIFICATE', 'true'),
         ],
 
+          'spms_db' => [
+            'driver' => 'sqlsrv',
+            'url' => env('DB_URL'),
+            'host' => env('DB_HOST', 'localhost'),
+            'port' => env('DB_PORT', '1433'),
+            'database' => env('SPMS_DB_DATABASE', 'laravel'),
+            'username' => env('DB_USERNAME', 'root'),
+            'password' => env('DB_PASSWORD', ''),
+            'charset' => env('DB_CHARSET', 'utf8'),
+            'prefix'   => '',
+            'prefix_indexes' => true,
+            'trust_server_certificate' => env('SECOND_DB_TRUST_SERVER_CERTIFICATE', 'true'),
+            'encrypt'  => env('SECOND_DB_ENCRYPT', 'false'),
+        ],
+
     ],
 
     /*

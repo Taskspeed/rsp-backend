@@ -284,7 +284,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('job-batches-rsp')->group(function () {
 
         Route::post('/', [JobBatchesRspController::class, 'storeJobPost']);   //  create a new job post
-        Route::post('/republished', [JobBatchesRspController::class, 'republished']);   // republish job-batches-rsp
+        Route::post('/republished', [JobBatchesRspController::class, 'republishedJobPost']);   // republish job-batches-rsp
         Route::put('/jobpost/{JobPostingId}', [JobBatchesRspController::class, 'jobpostUnoccupied']);   // update the  job-post status to unoccupied there is no applicant hired
         // Route::delete('/{id}', [JobBatchesRspController::class, 'destroy']); // delete job post
         Route::get('/{PositionID}/{ItemNo}', [JobBatchesRspController::class, 'show']);
@@ -296,7 +296,8 @@ Route::middleware('auth:sanctum')->group(function () {
         // get the list of unqualified on specific job post 
         Route::get('/applicant/unqualified/{jobPostId}', [JobBatchesRspController::class, 'getApplicantUnqualifiedOnJobPost']);
         Route::get('/applicant/qualification/remarks/{jobPostId}/{submissionId}', [JobBatchesRspController::class, 'getApplicantUnqualifiedQualificationRemarks']);
-    });
+
+        });
 
 
     // qs of every position
@@ -436,8 +437,11 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/active', [PlantillaController::class, 'vwActiveGet']); // fetching employee active
     Route::get('/view/criteria/{job_batches_rsp_id}', [CriteriaController::class, 'viewCriteria']); // view details of job criteria
-
     Route::delete('/job/delete/{id}', [JobBatchesRspController::class, 'deleteJobPost']); // delete job post  with the criteria and pdf
+
+    Route::get('/job-post/list-of-post/{tblStructureId}', [JobBatchesRspController::class, 'getListOfPost']);
+    Route::get('/job-post/open/{office}', [JobBatchesRspController::class, 'allowedToOpen']);
+
     Route::get('/job-post', [JobBatchesRspController::class, 'jobPost']); // fetching all job post
     Route::get('/job-post/{postDate}/{endDate}', [JobBatchesRspController::class, 'jobPostFiltered']);
     Route::get('/proxy-image/{submissionId}', [SubmissionController::class, 'getImageInternalApplicant']);
@@ -484,6 +488,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
     });
 
+    // Route::get('/publication/date', [ReportController::class, 'listDate'])->withoutMiddleware(['auth:sanctum']);
+
+
     // api.php
 Route::get('/storage-cors/{path}', function ($path) {
     $fullPath = storage_path('app/public/' . $path);
@@ -497,5 +504,7 @@ Route::get('/storage-cors/{path}', function ($path) {
         'Access-Control-Allow-Methods' => 'GET',
     ]);
 })->where('path', '.*')->withoutMiddleware(['auth:sanctum']);
+
+
 
 });

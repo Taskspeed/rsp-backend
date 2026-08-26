@@ -13,3 +13,4 @@ Route::get('/email', [EmailController::class, 'sendEmail']);
 Route::view('/interview', 'mail-template.interview');
 Route::view('/qualified', 'mail-template.qualified');
 Route::view('/unqualified', 'mail-template.unqualified');
+Route::view('/not-chosen', 'mail-template.applicant-not-chosen');

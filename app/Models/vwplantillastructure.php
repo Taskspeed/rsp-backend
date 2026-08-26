@@ -34,7 +34,6 @@ class vwplantillastructure extends Model
     public function vwActive()
     {
         return $this->hasOne(vwActive::class, 'ControlNo', 'ControlNo');
-        // added explicit keys for clarity:
-        // foreign_key on vwActive, local_key on vwplantillastructure
+      
     }
 }

@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    {{-- <title>{{ $mailSubject }}</title> --}}
+    <title>Notice of Application Status</title>
 
     <style>
         body {
@@ -107,23 +107,23 @@
     <!-- Letterhead -->
         <div>
 
-            <img src="{{ $message->embed(public_path('images/emailHeader.png')) }}" alt="Logo" class="header-image">
+            <img src="https://placehold.co/1500x140/1d8d07/ffffff?text=LGU+Letterhead" alt="Logo" class="header-image">
 
         </div>
 
          <!-- Date -->
         <div class="date">
-            {{ $date }}
+            August 26, 2026
         </div>
 
 
         <div class="content">
-            <p>Dear <strong>{{ $full_name }}</strong>,</p>
+            <p>Dear <strong>Juan Dela Cruz</strong>,</p>
             <p>Greetings of Peace and Safety!</p>
 
             <p>
-               Thank you for your interest in the position of <strong>{{ $Position }},</strong> Item No.<strong>{{ $ItemNo }}</strong>
-            under the <strong>{{ $Office }},</strong> and for the time and effort you invested in your application.
+               Thank you for your interest in the position of <strong>Administrative Aide VI,</strong> Item No.<strong>OSCA-ADAD6-25-2024</strong>
+            under the <strong>Office of the Senior Citizens Affairs,</strong> and for the time and effort you invested in your application.
             </p>
 
             <p>

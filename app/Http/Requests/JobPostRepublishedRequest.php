@@ -45,7 +45,7 @@ class JobPostRepublishedRequest extends FormRequest
             'old_job_id' => 'required|integer',
 
 
-        // ✅ Step 2: Validate criteria fields
+            // ✅ Step 2: Validate criteria fields
 
             'Education' => 'nullable|string',
             'Eligibility' => 'nullable|string',

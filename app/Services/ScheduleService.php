@@ -34,139 +34,139 @@ class ScheduleService
 
     // ── SEND EMAIL INTERVIEW ─────────────────────────────────────────────
     public function sendEmailInterview($validated)
-{
-    $date          = Carbon::parse($validated['date_interview'])->format('F d, Y');
-    $timeFormatted = Carbon::parse($validated['time_interview'])->format('g:i A');
-    $time          = $validated['time_interview'];
-    $venue         = $validated['venue_interview'];
-    $batchName     = $validated['batch_name'];
-    $count         = 0;
+    {
+        $date          = Carbon::parse($validated['date_interview'])->format('F d, Y');
+        $timeFormatted = Carbon::parse($validated['time_interview'])->format('g:i A');
+        $time          = $validated['time_interview'];
+        $venue         = $validated['venue_interview'];
+        $batchName     = $validated['batch_name'];
+        $count         = 0;
 
-    $schedule = Schedule::create([
-        'batch_name'      => $batchName,
-        'date_interview'  => $validated['date_interview'],
-        'time_interview'  => $time,
-        'venue_interview' => $venue,
-    ]);
-
-    foreach ($validated['applicants'] as $app) {
-
-        $submission = Submission::with('nPersonalInfo')->find($app['submission_id']);
-        if (!$submission) continue;
-
-        $job = JobBatchesRsp::find($app['job_batches_rsp']);
-        if (!$job) continue;
-
-        $position    = $job->Position    ?? '';
-        $office      = $job->Office      ?? '';
-        $SalaryGrade = $job->SalaryGrade ?? '';
-        $ItemNo      = $job->ItemNo      ?? '';
-
-        [$fullname, $email, $contactNumber] = $this->resolveApplicantInfo($submission);
-
-        // ── Resolve address based on applicant type ──────────────────────
-        $isExternal = !is_null($submission->nPersonalInfo_id);
-
-        if ($isExternal) {
-            $applicant = $submission->nPersonalInfo;
-
-            $street   = $applicant->residential_street   ?? '';
-            $barangay = $applicant->residential_barangay ?? '';
-            $city     = $applicant->residential_city     ?? '';
-            $province = $applicant->residential_province ?? '';
-            $purok    = $applicant->Rpurok               ?? '';
-        } else {
-            $internalApplicant = DB::table('xPersonalAddt')
-                ->where('ControlNo', $submission->ControlNo)
-                ->select(
-                    'Rpurok',
-                    'Rstreet',
-                    'Rbarangay',
-                    'Rcity',
-                    'Rprovince',
-                )
-                ->first();
-
-            $street   = $internalApplicant->Rstreet   ?? '';
-            $barangay = $internalApplicant->Rbarangay ?? '';
-            $city     = $internalApplicant->Rcity     ?? '';
-            $province = $internalApplicant->Rprovince ?? '';
-            $purok    = $internalApplicant->Rpurok    ?? '';
-        }
-        // ─────────────────────────────────────────────────────────────────
-
-        if (!$email) {
-            continue;
-        }
-
-        SchedulesApplicant::create([
-            'schedule_id'   => $schedule->id,
-            'submission_id' => $submission->id,
+        $schedule = Schedule::create([
+            'batch_name'      => $batchName,
+            'date_interview'  => $validated['date_interview'],
+            'time_interview'  => $time,
+            'venue_interview' => $venue,
         ]);
 
-        // ✅ Send Email
-        Mail::to($email)->queue((new EmailApi(
-            "Interview Invitation",
-            'mail-template.interview',
-            [
-                'fullname'    => $fullname,
-                'date_interview'        => $date,
-                'time'        => $timeFormatted,
-                'venue'       => $venue,
-                'position'    => $position,
-                'SalaryGrade' => $SalaryGrade,
-                'office'      => $office,
-                'ItemNo'      => $ItemNo,
-                // ── address fields ──
-                'Rpurok'      => $purok,
-                'street'      => $street,
-                'barangay'    => $barangay,
-                'city'        => $city,
-                'province'    => $province,
-                'date' => now()->format('F d, Y'),
-            ]
-        ))->onQueue('emails'));
+        foreach ($validated['applicants'] as $app) {
 
-        $submission->update(['is_emailed' => true]);
+            $submission = Submission::with('nPersonalInfo')->find($app['submission_id']);
+            if (!$submission) continue;
 
-        // ✅ Send SMS
-        $this->dispatchSms(
-            contactNumber: $contactNumber,
-            fullname: $fullname,
-            type: 'interview',
-            date: $date,
-            time: $timeFormatted,
-            venue: $venue,
-            position: $position,
-            office: $office,
-            ItemNo: $ItemNo,
+            $job = JobBatchesRsp::find($app['job_batches_rsp']);
+            if (!$job) continue;
+
+            $position    = $job->Position    ?? '';
+            $office      = $job->Office      ?? '';
+            $SalaryGrade = $job->SalaryGrade ?? '';
+            $ItemNo      = $job->ItemNo      ?? '';
+
+            [$fullname, $email, $contactNumber] = $this->resolveApplicantInfo($submission);
+
+            // ── Resolve address based on applicant type ──────────────────────
+            $isExternal = !is_null($submission->nPersonalInfo_id);
+
+            if ($isExternal) {
+                $applicant = $submission->nPersonalInfo;
+
+                $street   = $applicant->residential_street   ?? '';
+                $barangay = $applicant->residential_barangay ?? '';
+                $city     = $applicant->residential_city     ?? '';
+                $province = $applicant->residential_province ?? '';
+                $purok    = $applicant->Rpurok               ?? '';
+            } else {
+                $internalApplicant = DB::table('xPersonalAddt')
+                    ->where('ControlNo', $submission->ControlNo)
+                    ->select(
+                        'Rpurok',
+                        'Rstreet',
+                        'Rbarangay',
+                        'Rcity',
+                        'Rprovince',
+                    )
+                    ->first();
+
+                $street   = $internalApplicant->Rstreet   ?? '';
+                $barangay = $internalApplicant->Rbarangay ?? '';
+                $city     = $internalApplicant->Rcity     ?? '';
+                $province = $internalApplicant->Rprovince ?? '';
+                $purok    = $internalApplicant->Rpurok    ?? '';
+            }
+            // ─────────────────────────────────────────────────────────────────
+
+            if (!$email) {
+                continue;
+            }
+
+            SchedulesApplicant::create([
+                'schedule_id'   => $schedule->id,
+                'submission_id' => $submission->id,
+            ]);
+
+            // ✅ Send Email
+            Mail::to($email)->queue((new EmailApi(
+                "Interview Invitation",
+                'mail-template.interview',
+                [
+                    'fullname'    => $fullname,
+                    'date_interview'        => $date,
+                    'time'        => $timeFormatted,
+                    'venue'       => $venue,
+                    'position'    => $position,
+                    'SalaryGrade' => $SalaryGrade,
+                    'office'      => $office,
+                    'ItemNo'      => $ItemNo,
+                    // ── address fields ──
+                    'Rpurok'      => $purok,
+                    'street'      => $street,
+                    'barangay'    => $barangay,
+                    'city'        => $city,
+                    'province'    => $province,
+                    'date' => now()->format('F d, Y'),
+                ]
+            ))->onQueue('emails'));
+
+            $submission->update(['is_emailed' => true]);
+
+            // ✅ Send SMS
+            $this->dispatchSms(
+                contactNumber: $contactNumber,
+                fullname: $fullname,
+                type: 'interview',
+                date: $date,
+                time: $timeFormatted,
+                venue: $venue,
+                position: $position,
+                office: $office,
+                ItemNo: $ItemNo,
+            );
+
+            $count++;
+
+            EmailLog::create([
+                'email'    => $email,
+                'activity' => 'Interview invitations',
+            ]);
+        }
+
+        $user = Auth::user();
+
+        $this->activityLogService->logSendEmailInterview(
+            $user,
+            $schedule,
+            $batchName,
+            $date,
+            $timeFormatted,
+            $venue,
+            $count
         );
 
-        $count++;
-
-        EmailLog::create([
-            'email'    => $email,
-            'activity' => 'Interview invitations',
+        return response()->json([
+            'success' => true,
+            'message' => "Interview invitations successfully sent to {$count} applicant(s).",
         ]);
     }
-
-    $user = Auth::user();
-
-    $this->activityLogService->logSendEmailInterview(
-        $user,
-        $schedule,
-        $batchName,
-        $date,
-        $timeFormatted,
-        $venue,
-        $count
-    );
-
-    return response()->json([
-        'success' => true,
-        'message' => "Interview invitations successfully sent to {$count} applicant(s).",
-    ]);
-}
     // public function sendEmailInterview($validated)
     // {
     //     $date          = Carbon::parse($validated['date_interview'])->format('F d, Y');
@@ -452,7 +452,7 @@ class ScheduleService
         if (empty($messages)) $messages[] = "Schedule updated successfully. No emails were sent.";
 
 
-         $user = Auth::user();
+        $user = Auth::user();
 
         // Log the update activity
         $this->activityLogService->logUpdateEmailInterview(
@@ -579,127 +579,127 @@ class ScheduleService
     // }
 
     // cancel interview and send email to applicant
-public function cancelEmailInterview($scheduleId)
-{
-    $schedule = Schedule::findOrFail($scheduleId);
+    public function cancelEmailInterview($scheduleId)
+    {
+        $schedule = Schedule::findOrFail($scheduleId);
 
-    $date          = Carbon::parse($schedule->date_interview)->format('F d, Y');
-    $timeFormatted = Carbon::parse($schedule->time_interview)->format('g:i A');
-    $venue         = $schedule->venue_interview;
-    $count         = 0;
+        $date          = Carbon::parse($schedule->date_interview)->format('F d, Y');
+        $timeFormatted = Carbon::parse($schedule->time_interview)->format('g:i A');
+        $venue         = $schedule->venue_interview;
+        $count         = 0;
 
-    $scheduleApplicants = SchedulesApplicant::where('schedule_id', $schedule->id)
-        ->with(['submission.nPersonalInfo'])
-        ->get();
+        $scheduleApplicants = SchedulesApplicant::where('schedule_id', $schedule->id)
+            ->with(['submission.nPersonalInfo'])
+            ->get();
 
-    foreach ($scheduleApplicants as $scheduleApplicant) {
-        $submission = $scheduleApplicant->submission;
-        if (!$submission) continue;
+        foreach ($scheduleApplicants as $scheduleApplicant) {
+            $submission = $scheduleApplicant->submission;
+            if (!$submission) continue;
 
-        $job = JobBatchesRsp::find($submission->job_batches_rsp_id);
-        if (!$job) continue;
+            $job = JobBatchesRsp::find($submission->job_batches_rsp_id);
+            if (!$job) continue;
 
-        $position    = $job->Position    ?? '';
-        $office      = $job->Office      ?? '';
-        $SalaryGrade = $job->SalaryGrade ?? '';
-        $ItemNo      = $job->ItemNo      ?? '';
+            $position    = $job->Position    ?? '';
+            $office      = $job->Office      ?? '';
+            $SalaryGrade = $job->SalaryGrade ?? '';
+            $ItemNo      = $job->ItemNo      ?? '';
 
-        [$fullname, $email, $contactNumber] = $this->resolveApplicantInfo($submission);
+            [$fullname, $email, $contactNumber] = $this->resolveApplicantInfo($submission);
 
-        // ── Resolve address based on applicant type ──────────────────────
-        $isExternal = !is_null($submission->nPersonalInfo_id);
+            // ── Resolve address based on applicant type ──────────────────────
+            $isExternal = !is_null($submission->nPersonalInfo_id);
 
-        if ($isExternal) {
-            $applicant = $submission->nPersonalInfo;
+            if ($isExternal) {
+                $applicant = $submission->nPersonalInfo;
 
-            $street   = $applicant->residential_street   ?? '';
-            $barangay = $applicant->residential_barangay ?? '';
-            $city     = $applicant->residential_city     ?? '';
-            $province = $applicant->residential_province ?? '';
-            $purok    = $applicant->Rpurok               ?? '';
-        } else {
-            $internalApplicant = DB::table('xPersonalAddt')
-                ->where('ControlNo', $submission->ControlNo)
-                ->select('Rpurok', 'Rstreet', 'Rbarangay', 'Rcity', 'Rprovince')
-                ->first();
+                $street   = $applicant->residential_street   ?? '';
+                $barangay = $applicant->residential_barangay ?? '';
+                $city     = $applicant->residential_city     ?? '';
+                $province = $applicant->residential_province ?? '';
+                $purok    = $applicant->Rpurok               ?? '';
+            } else {
+                $internalApplicant = DB::table('xPersonalAddt')
+                    ->where('ControlNo', $submission->ControlNo)
+                    ->select('Rpurok', 'Rstreet', 'Rbarangay', 'Rcity', 'Rprovince')
+                    ->first();
 
-            $street   = $internalApplicant->Rstreet   ?? '';
-            $barangay = $internalApplicant->Rbarangay ?? '';
-            $city     = $internalApplicant->Rcity     ?? '';
-            $province = $internalApplicant->Rprovince ?? '';
-            $purok    = $internalApplicant->Rpurok    ?? '';
+                $street   = $internalApplicant->Rstreet   ?? '';
+                $barangay = $internalApplicant->Rbarangay ?? '';
+                $city     = $internalApplicant->Rcity     ?? '';
+                $province = $internalApplicant->Rprovince ?? '';
+                $purok    = $internalApplicant->Rpurok    ?? '';
+            }
+            // ─────────────────────────────────────────────────────────────────
+
+            if (!$email) continue;
+
+            Mail::to($email)->queue((new EmailApi(
+                "Interview Cancellation",
+                'mail-template.cancel-interview',
+                [
+                    'fullname'    => $fullname,
+                    'date_cancel'        => $date,
+                    'time'        => $timeFormatted,
+                    'venue'       => $venue,
+                    'position'    => $position,
+                    'SalaryGrade' => $SalaryGrade,
+                    'office'      => $office,
+                    'ItemNo'      => $ItemNo,
+                    // ── address fields ──
+                    'Rpurok'      => $purok,
+                    'street'      => $street,
+                    'barangay'    => $barangay,
+                    'city'        => $city,
+                    'province'    => $province,
+                    'date' => now()->format('F d, Y'),
+                ]
+            ))->onQueue('emails'));
+
+            $this->dispatchSms(
+                contactNumber: $contactNumber,
+                fullname: $fullname,
+                type: 'interview-cancel',
+                date: $date,
+                time: $timeFormatted,
+                venue: $venue,
+                position: $position,
+                office: $office,
+                ItemNo: $ItemNo,
+            );
+
+            $count++;
+
+            EmailLog::create([
+                'email'    => $email,
+                'activity' => 'Interview cancellation',
+            ]);
         }
-        // ─────────────────────────────────────────────────────────────────
 
-        if (!$email) continue;
+        $schedule->delete();
 
-        Mail::to($email)->queue((new EmailApi(
-            "Interview Cancellation",
-            'mail-template.cancel-interview',
-            [
-                'fullname'    => $fullname,
-                'date_cancel'        => $date,
-                'time'        => $timeFormatted,
-                'venue'       => $venue,
-                'position'    => $position,
-                'SalaryGrade' => $SalaryGrade,
-                'office'      => $office,
-                'ItemNo'      => $ItemNo,
-                // ── address fields ──
-                'Rpurok'      => $purok,
-                'street'      => $street,
-                'barangay'    => $barangay,
-                'city'        => $city,
-                'province'    => $province,
-                'date' => now()->format('F d, Y'),
-            ]
-        ))->onQueue('emails'));
+        $user = Auth::user();
 
-        $this->dispatchSms(
-            contactNumber: $contactNumber,
-            fullname: $fullname,
-            type: 'interview-cancel',
-            date: $date,
-            time: $timeFormatted,
-            venue: $venue,
-            position: $position,
-            office: $office,
-            ItemNo: $ItemNo,
-        );
+        if ($user instanceof \App\Models\User) {
+            activity('Interview Cancellation')
+                ->causedBy($user)
+                ->withProperties([
+                    'name'            => $user->name,
+                    'username'        => $user->username,
+                    'date_interview'  => $date,
+                    'time_interview'  => $timeFormatted,
+                    'venue_interview' => $venue,
+                    'total_sent'      => $count,
+                    'ip'              => request()->ip(),
+                    'user_agent'      => request()->header('User-Agent'),
+                ])
+                ->log("{$user->name} sent cancellation of interview on {$date} at {$timeFormatted} to {$count} applicant(s).");
+        }
 
-        $count++;
-
-        EmailLog::create([
-            'email'    => $email,
-            'activity' => 'Interview cancellation',
+        return response()->json([
+            'success' => true,
+            'message' => "Interview cancellation notices sent to {$count} applicant(s).",
         ]);
     }
-
-    $schedule->delete();
-
-    $user = Auth::user();
-
-    if ($user instanceof \App\Models\User) {
-        activity('Interview Cancellation')
-            ->causedBy($user)
-            ->withProperties([
-                'name'            => $user->name,
-                'username'        => $user->username,
-                'date_interview'  => $date,
-                'time_interview'  => $timeFormatted,
-                'venue_interview' => $venue,
-                'total_sent'      => $count,
-                'ip'              => request()->ip(),
-                'user_agent'      => request()->header('User-Agent'),
-            ])
-            ->log("{$user->name} sent cancellation of interview on {$date} at {$timeFormatted} to {$count} applicant(s).");
-    }
-
-    return response()->json([
-        'success' => true,
-        'message' => "Interview cancellation notices sent to {$count} applicant(s).",
-    ]);
-}
 
     // ── SEND EMAIL EXAMINATION ───────────────────────────────────────────
     // public function sendEmailExamination($validated)
@@ -822,140 +822,140 @@ public function cancelEmailInterview($scheduleId)
     //     ]);
     // }
     // ── SEND EMAIL EXAMINATION ───────────────────────────────────────────
-public function sendEmailExamination($validated)
-{
-    $date          = Carbon::parse($validated['date_exam'])->format('F d, Y');
-    $timeFormatted = Carbon::parse($validated['time_exam'])->format('g:i A');
-    $time          = $validated['time_exam'];
-    $venue         = $validated['venue_exam'];
-    $batchName     = $validated['batch_name'];
-    $count         = 0;
+    public function sendEmailExamination($validated)
+    {
+        $date          = Carbon::parse($validated['date_exam'])->format('F d, Y');
+        $timeFormatted = Carbon::parse($validated['time_exam'])->format('g:i A');
+        $time          = $validated['time_exam'];
+        $venue         = $validated['venue_exam'];
+        $batchName     = $validated['batch_name'];
+        $count         = 0;
 
-    $schedules_exam = SchedulesExam::create([
-        'batch_name' => $batchName,
-        'date_exam'  => $validated['date_exam'],
-        'time_exam'  => $time,
-        'venue_exam' => $venue,
-    ]);
-
-    foreach ($validated['applicants'] as $app) {
-
-        $submission = Submission::with('nPersonalInfo')->find($app['submission_id']);
-        if (!$submission) continue;
-
-        $job = JobBatchesRsp::find($app['job_batches_rsp']);
-        if (!$job) continue;
-
-        $position    = $job->Position    ?? '';
-        $office      = $job->Office      ?? '';
-        $SalaryGrade = $job->SalaryGrade ?? '';
-        $ItemNo      = $job->ItemNo      ?? '';
-
-        [$fullname, $email, $contactNumber] = $this->resolveApplicantInfo($submission);
-
-        // ── Resolve address based on applicant type ──────────────────────
-        $isExternal = !is_null($submission->nPersonalInfo_id);
-
-        if ($isExternal) {
-            $applicant = $submission->nPersonalInfo;
-
-            $street   = $applicant->residential_street   ?? '';
-            $barangay = $applicant->residential_barangay ?? '';
-            $city     = $applicant->residential_city     ?? '';
-            $province = $applicant->residential_province ?? '';
-            $purok    = $applicant->Rpurok               ?? '';
-        } else {
-            $internalApplicant = DB::table('xPersonalAddt')
-                ->where('ControlNo', $submission->ControlNo)
-                ->select(
-                    'Rpurok',
-                    'Rstreet',
-                    'Rbarangay',
-                    'Rcity',
-                    'Rprovince',
-                )
-                ->first();
-
-            $street   = $internalApplicant->Rstreet   ?? '';
-            $barangay = $internalApplicant->Rbarangay ?? '';
-            $city     = $internalApplicant->Rcity     ?? '';
-            $province = $internalApplicant->Rprovince ?? '';
-            $purok    = $internalApplicant->Rpurok    ?? '';
-        }
-        // ─────────────────────────────────────────────────────────────────
-
-        if (!$email) {
-            continue;
-        }
-
-        SchedulesExamApplicant::create([
-            'schedules_exam_id' => $schedules_exam->id,
-            'submission_id'     => $submission->id,
+        $schedules_exam = SchedulesExam::create([
+            'batch_name' => $batchName,
+            'date_exam'  => $validated['date_exam'],
+            'time_exam'  => $time,
+            'venue_exam' => $venue,
         ]);
 
-        // ✅ Send Email
-        Mail::to($email)->queue((new EmailApi(
-            "Examination Invitation",
-            'mail-template.examination',
-            [
-                'fullname'    => $fullname,
-                'date_exam'        => $date,
-                'time'        => $timeFormatted,
-                'venue'       => $venue,
-                'position'    => $position,
-                'SalaryGrade' => $SalaryGrade,
-                'office'      => $office,
-                'ItemNo'      => $ItemNo,
-                // ── address fields ──
-                'Rpurok'      => $purok,
-                'street'      => $street,
-                'barangay'    => $barangay,
-                'city'        => $city,
-                'province'    => $province,
-                'date' => now()->format('F d, Y'),
-            ]
-        ))->onQueue('emails'));
+        foreach ($validated['applicants'] as $app) {
 
-        $submission->update(['is_emailed' => true]);
+            $submission = Submission::with('nPersonalInfo')->find($app['submission_id']);
+            if (!$submission) continue;
 
-        // ✅ Send SMS
-        $this->dispatchSms(
-            contactNumber: $contactNumber,
-            fullname: $fullname,
-            type: 'examination',
-            date: $date,
-            time: $timeFormatted,
-            venue: $venue,
-            position: $position,
-            office: $office,
-            ItemNo: $ItemNo,
+            $job = JobBatchesRsp::find($app['job_batches_rsp']);
+            if (!$job) continue;
+
+            $position    = $job->Position    ?? '';
+            $office      = $job->Office      ?? '';
+            $SalaryGrade = $job->SalaryGrade ?? '';
+            $ItemNo      = $job->ItemNo      ?? '';
+
+            [$fullname, $email, $contactNumber] = $this->resolveApplicantInfo($submission);
+
+            // ── Resolve address based on applicant type ──────────────────────
+            $isExternal = !is_null($submission->nPersonalInfo_id);
+
+            if ($isExternal) {
+                $applicant = $submission->nPersonalInfo;
+
+                $street   = $applicant->residential_street   ?? '';
+                $barangay = $applicant->residential_barangay ?? '';
+                $city     = $applicant->residential_city     ?? '';
+                $province = $applicant->residential_province ?? '';
+                $purok    = $applicant->Rpurok               ?? '';
+            } else {
+                $internalApplicant = DB::table('xPersonalAddt')
+                    ->where('ControlNo', $submission->ControlNo)
+                    ->select(
+                        'Rpurok',
+                        'Rstreet',
+                        'Rbarangay',
+                        'Rcity',
+                        'Rprovince',
+                    )
+                    ->first();
+
+                $street   = $internalApplicant->Rstreet   ?? '';
+                $barangay = $internalApplicant->Rbarangay ?? '';
+                $city     = $internalApplicant->Rcity     ?? '';
+                $province = $internalApplicant->Rprovince ?? '';
+                $purok    = $internalApplicant->Rpurok    ?? '';
+            }
+            // ─────────────────────────────────────────────────────────────────
+
+            if (!$email) {
+                continue;
+            }
+
+            SchedulesExamApplicant::create([
+                'schedules_exam_id' => $schedules_exam->id,
+                'submission_id'     => $submission->id,
+            ]);
+
+            // ✅ Send Email
+            Mail::to($email)->queue((new EmailApi(
+                "Examination Invitation",
+                'mail-template.examination',
+                [
+                    'fullname'    => $fullname,
+                    'date_exam'        => $date,
+                    'time'        => $timeFormatted,
+                    'venue'       => $venue,
+                    'position'    => $position,
+                    'SalaryGrade' => $SalaryGrade,
+                    'office'      => $office,
+                    'ItemNo'      => $ItemNo,
+                    // ── address fields ──
+                    'Rpurok'      => $purok,
+                    'street'      => $street,
+                    'barangay'    => $barangay,
+                    'city'        => $city,
+                    'province'    => $province,
+                    'date' => now()->format('F d, Y'),
+                ]
+            ))->onQueue('emails'));
+
+            $submission->update(['is_emailed' => true]);
+
+            // ✅ Send SMS
+            $this->dispatchSms(
+                contactNumber: $contactNumber,
+                fullname: $fullname,
+                type: 'examination',
+                date: $date,
+                time: $timeFormatted,
+                venue: $venue,
+                position: $position,
+                office: $office,
+                ItemNo: $ItemNo,
+            );
+
+            $count++;
+
+            EmailLog::create([
+                'email'    => $email,
+                'activity' => 'Examination invitations',
+            ]);
+        }
+
+        $user = Auth::user();
+
+        $this->activityLogService->logSendEmailExamination(
+            $user,
+            $schedules_exam,
+            $batchName,
+            $date,
+            $timeFormatted,
+            $venue,
+            $count
         );
 
-        $count++;
-
-        EmailLog::create([
-            'email'    => $email,
-            'activity' => 'Examination invitations',
+        return response()->json([
+            'success' => true,
+            'message' => "Examination invitations successfully sent to {$count} applicant(s).",
         ]);
     }
-
-    $user = Auth::user();
-
-    $this->activityLogService->logSendEmailExamination(
-        $user,
-        $schedules_exam,
-        $batchName,
-        $date,
-        $timeFormatted,
-        $venue,
-        $count
-    );
-
-    return response()->json([
-        'success' => true,
-        'message' => "Examination invitations successfully sent to {$count} applicant(s).",
-    ]);
-}
 
     // updating and send email to applicant examination
     public function updateEmailExamination($validated, $scheduleExamId)
@@ -1266,120 +1266,120 @@ public function sendEmailExamination($validated)
     //     ]);
     // }
     // cancel interview and send email to applicant
-public function cancelEmailExamination($scheduleExamId)
-{
-    $schedule = SchedulesExam::findOrFail($scheduleExamId);
+    public function cancelEmailExamination($scheduleExamId)
+    {
+        $schedule = SchedulesExam::findOrFail($scheduleExamId);
 
-    $date          = Carbon::parse($schedule->date_exam)->format('F d, Y');
-    $timeFormatted = Carbon::parse($schedule->time_exam)->format('g:i A');
-    $venue         = $schedule->venue_exam;
-    $count         = 0;
+        $date          = Carbon::parse($schedule->date_exam)->format('F d, Y');
+        $timeFormatted = Carbon::parse($schedule->time_exam)->format('g:i A');
+        $venue         = $schedule->venue_exam;
+        $count         = 0;
 
-    $scheduleApplicants = SchedulesExamApplicant::where('schedules_exam_id', $schedule->id)
-        ->with(['submission.nPersonalInfo'])
-        ->get();
+        $scheduleApplicants = SchedulesExamApplicant::where('schedules_exam_id', $schedule->id)
+            ->with(['submission.nPersonalInfo'])
+            ->get();
 
-    foreach ($scheduleApplicants as $scheduleApplicant) {
-        $submission = $scheduleApplicant->submission;
-        if (!$submission) continue;
+        foreach ($scheduleApplicants as $scheduleApplicant) {
+            $submission = $scheduleApplicant->submission;
+            if (!$submission) continue;
 
-        $job = JobBatchesRsp::find($submission->job_batches_rsp_id);
-        if (!$job) continue;
+            $job = JobBatchesRsp::find($submission->job_batches_rsp_id);
+            if (!$job) continue;
 
-        $position    = $job->Position    ?? '';
-        $office      = $job->Office      ?? '';
-        $SalaryGrade = $job->SalaryGrade ?? '';
-        $ItemNo      = $job->ItemNo      ?? '';
+            $position    = $job->Position    ?? '';
+            $office      = $job->Office      ?? '';
+            $SalaryGrade = $job->SalaryGrade ?? '';
+            $ItemNo      = $job->ItemNo      ?? '';
 
-        [$fullname, $email, $contactNumber] = $this->resolveApplicantInfo($submission);
+            [$fullname, $email, $contactNumber] = $this->resolveApplicantInfo($submission);
 
-        // ── Resolve address based on applicant type ──────────────────────
-        $isExternal = !is_null($submission->nPersonalInfo_id);
+            // ── Resolve address based on applicant type ──────────────────────
+            $isExternal = !is_null($submission->nPersonalInfo_id);
 
-        if ($isExternal) {
-            $applicant = $submission->nPersonalInfo;
+            if ($isExternal) {
+                $applicant = $submission->nPersonalInfo;
 
-            $street   = $applicant->residential_street   ?? '';
-            $barangay = $applicant->residential_barangay ?? '';
-            $city     = $applicant->residential_city     ?? '';
-            $province = $applicant->residential_province ?? '';
-            $purok    = $applicant->Rpurok               ?? '';
-        } else {
-            $internalApplicant = DB::table('xPersonalAddt')
-                ->where('ControlNo', $submission->ControlNo)
-                ->select('Rpurok', 'Rstreet', 'Rbarangay', 'Rcity', 'Rprovince')
-                ->first();
+                $street   = $applicant->residential_street   ?? '';
+                $barangay = $applicant->residential_barangay ?? '';
+                $city     = $applicant->residential_city     ?? '';
+                $province = $applicant->residential_province ?? '';
+                $purok    = $applicant->Rpurok               ?? '';
+            } else {
+                $internalApplicant = DB::table('xPersonalAddt')
+                    ->where('ControlNo', $submission->ControlNo)
+                    ->select('Rpurok', 'Rstreet', 'Rbarangay', 'Rcity', 'Rprovince')
+                    ->first();
 
-            $street   = $internalApplicant->Rstreet   ?? '';
-            $barangay = $internalApplicant->Rbarangay ?? '';
-            $city     = $internalApplicant->Rcity     ?? '';
-            $province = $internalApplicant->Rprovince ?? '';
-            $purok    = $internalApplicant->Rpurok    ?? '';
+                $street   = $internalApplicant->Rstreet   ?? '';
+                $barangay = $internalApplicant->Rbarangay ?? '';
+                $city     = $internalApplicant->Rcity     ?? '';
+                $province = $internalApplicant->Rprovince ?? '';
+                $purok    = $internalApplicant->Rpurok    ?? '';
+            }
+            // ─────────────────────────────────────────────────────────────────
+
+            if (!$email) continue;
+
+            Mail::to($email)->queue((new EmailApi(
+                "Examination Cancellation",
+                'mail-template.cancel-examination',
+                [
+                    'fullname'    => $fullname,
+                    'date_cancel'        => $date,
+                    'time'        => $timeFormatted,
+                    'venue'       => $venue,
+                    'position'    => $position,
+                    'SalaryGrade' => $SalaryGrade,
+                    'office'      => $office,
+                    'ItemNo'      => $ItemNo,
+                    // ── address fields ──
+                    'Rpurok'      => $purok,
+                    'street'      => $street,
+                    'barangay'    => $barangay,
+                    'city'        => $city,
+                    'province'    => $province,
+                    'date' => now()->format('F d, Y'),
+                ]
+            ))->onQueue('emails'));
+
+            $this->dispatchSms(
+                contactNumber: $contactNumber,
+                fullname: $fullname,
+                type: 'examination-cancel',
+                date: $date,
+                time: $timeFormatted,
+                venue: $venue,
+                position: $position,
+                office: $office,
+                ItemNo: $ItemNo,
+            );
+
+            $count++;
+
+            EmailLog::create([
+                'email'    => $email,
+                'activity' => 'Examination cancellation',
+            ]);
         }
-        // ─────────────────────────────────────────────────────────────────
 
-        if (!$email) continue;
+        $schedule->delete();
 
-        Mail::to($email)->queue((new EmailApi(
-            "Examination Cancellation",
-            'mail-template.cancel-examination',
-            [
-                'fullname'    => $fullname,
-                'date_cancel'        => $date,
-                'time'        => $timeFormatted,
-                'venue'       => $venue,
-                'position'    => $position,
-                'SalaryGrade' => $SalaryGrade,
-                'office'      => $office,
-                'ItemNo'      => $ItemNo,
-                // ── address fields ──
-                'Rpurok'      => $purok,
-                'street'      => $street,
-                'barangay'    => $barangay,
-                'city'        => $city,
-                'province'    => $province,
-                'date' => now()->format('F d, Y'),
-            ]
-        ))->onQueue('emails'));
+        $user = Auth::user();
 
-        $this->dispatchSms(
-            contactNumber: $contactNumber,
-            fullname: $fullname,
-            type: 'examination-cancel',
-            date: $date,
-            time: $timeFormatted,
-            venue: $venue,
-            position: $position,
-            office: $office,
-            ItemNo: $ItemNo,
+        $this->activityLogService->logCancelEmailExamination(
+            $user,
+            $schedule,
+            $date,
+            $timeFormatted,
+            $venue,
+            $count
         );
 
-        $count++;
-
-        EmailLog::create([
-            'email'    => $email,
-            'activity' => 'Examination cancellation',
+        return response()->json([
+            'success' => true,
+            'message' => "Examination cancellation notices sent to {$count} applicant(s).",
         ]);
     }
-
-    $schedule->delete();
-
-    $user = Auth::user();
-
-    $this->activityLogService->logCancelEmailExamination(
-        $user,
-        $schedule,
-        $date,
-        $timeFormatted,
-        $venue,
-        $count
-    );
-
-    return response()->json([
-        'success' => true,
-        'message' => "Examination cancellation notices sent to {$count} applicant(s).",
-    ]);
-}
 
 // ── REUSABLE: Resolve applicant name, email, contact ────────────────
     /**
@@ -1542,204 +1542,181 @@ public function cancelEmailExamination($scheduleExamId)
     }
 
     // for the unqualified applicant that send an  the qualification and remarks
-   public function sendEmailApplicantBatch($validated, $request)
-{
-    $jobId = $validated['job_batches_rsp_id'];
+    public function sendEmailApplicantBatch($validated, $request)
+    {
+        $jobId = $validated['job_batches_rsp_id'];
 
-    $submissions = Submission::where('job_batches_rsp_id', $jobId)
-        ->with('nPersonalInfo')
-        ->where('status', 'Unqualified')
-        ->get();
+        $submissions = Submission::where('job_batches_rsp_id', $jobId)
+            ->with('nPersonalInfo')
+            ->where('status', 'Unqualified')
+            ->get();
 
-    if ($submissions->isEmpty()) {
+        if ($submissions->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No Unqualified applicants found for this job post.'
+            ], 404);
+        }
+
+        $job = \App\Models\JobBatchesRsp::with('criteria:id,job_batches_rsp_id,Education,Eligibility,Training,Experience')
+            ->find($jobId);
+
+        $position       = $job->Position         ?? '';
+        $office         = $job->Office           ?? '';
+        $education_qs   = $job->criteria->Education   ?? '';
+        $eligibility_qs = $job->criteria->Eligibility ?? '';
+        $training_qs    = $job->criteria->Training    ?? '';
+        $experience_qs  = $job->criteria->Experience  ?? '';
+
+        $count = 0;
+
+        foreach ($submissions as $submission) {
+
+            // =====================
+            // EXTERNAL — has nPersonalInfo_id
+            // =====================
+            $isExternal = !is_null($submission->nPersonalInfo_id);
+
+            if ($isExternal) {
+                $applicant = $submission->nPersonalInfo;
+
+                if (!$applicant) {
+                    continue;
+                }
+
+                $fullname = trim(ucwords(strtolower("{$applicant->firstname} {$applicant->lastname}")));
+                $email         = $applicant->email_address    ?? null;
+                $contactNumber = $applicant->cellphone_number ?? null;
+
+                $street   = $applicant->residential_street   ?? '';
+                $barangay = $applicant->residential_barangay ?? '';
+                $city     = $applicant->residential_city     ?? '';
+                $province = $applicant->residential_province ?? '';
+                $purok    = $applicant->Rpurok               ?? '';
+                $lastname = $applicant->lastname             ?? '';
+
+
+                // =====================
+                // INTERNAL — has ControlNo
+                // =====================
+            } else {
+                $internalApplicant = DB::table('xPersonalAddt')
+                    ->join('xPersonal', 'xPersonalAddt.ControlNo', '=', 'xPersonal.ControlNo')
+                    ->where('xPersonalAddt.ControlNo', $submission->ControlNo)
+                    ->select(
+                        'xPersonal.Firstname',
+                        'xPersonal.Surname',
+                        'xPersonalAddt.EmailAdd',
+                        'xPersonalAddt.Rpurok',
+                        'xPersonalAddt.Rstreet',
+                        'xPersonalAddt.Rbarangay',
+                        'xPersonalAddt.Rcity',
+                        'xPersonalAddt.Rprovince',
+                        'xPersonalAddt.CellphoneNo as cellphone_number'
+                    )
+                    ->first();
+
+                if (!$internalApplicant) {
+                    continue;
+                }
+
+                // $fullname      = trim("{$internalApplicant->Firstname} {$internalApplicant->Surname}");
+                $fullname = trim(ucwords(strtolower("{$internalApplicant->Firstname} {$internalApplicant->Surname}")));
+                $email         = $internalApplicant->EmailAdd        ?? null;
+                $contactNumber = $internalApplicant->cellphone_number ?? null;
+
+                $street   = $internalApplicant->Rstreet   ?? '';
+                $barangay = $internalApplicant->Rbarangay ?? '';
+                $city     = $internalApplicant->Rcity     ?? '';
+                $province = $internalApplicant->Rprovince ?? '';
+                $purok    = $internalApplicant->Rpurok    ?? '';
+                $lastname = $internalApplicant->Surname   ?? '';
+            }
+
+            if (empty($email)) {
+                continue;
+            }
+
+            try {
+                Mail::to($email)->queue((new EmailApi(
+                    "Application - Unqualified",
+                    'mail-template.unqualified',
+                    [
+                        'fullname'  => $fullname,
+                        'lastname'  => $lastname,
+                        'Rpurok'    => $purok,
+                        'street'    => $street,
+                        'barangay'  => $barangay,
+                        'city'      => $city,
+                        'province'  => $province,
+                        'position'  => $position,
+                        'office'    => $office,
+
+
+
+                        'education_remark'   => $submission->education_remark   ?? '',
+                        'experience_remark'  => $submission->experience_remark  ?? '',
+                        'training_remark'    => $submission->training_remark    ?? '',
+                        'eligibility_remark' => $submission->eligibility_remark ?? '',
+
+                        'education_qs'   => $education_qs,
+                        'eligibility_qs' => $eligibility_qs,
+                        'training_qs'    => $training_qs,
+                        'experience_qs'  => $experience_qs,
+
+                        'date' => now()->format('F d, Y'),
+                    ]
+                ))->onQueue('emails'));
+
+                $submission->update(['is_emailed' => true]);
+
+                $this->dispatchSmsUnqualified(
+                    contactNumber: $contactNumber,
+                    fullname: $fullname,
+                    position: $position,
+                    office: $office,
+                );
+
+                EmailLog::create([
+                    'email'    => $email,
+                    'activity' => 'Unqualified',
+                ]);
+
+                $user = Auth::user();
+                if ($user instanceof \App\Models\User) {
+                    activity('Unqualified Applicant Email Sent')
+                        ->causedBy($user)
+                        ->performedOn($submission)
+                        ->withProperties([
+                            'name'               => $user->name,
+                            'username'           => $user->username,
+                            'applicant_name'     => $fullname,
+                            'applicant_type'     => $isExternal ? 'EXTERNAL' : 'INTERNAL', // ✅
+                            'email'              => $email,
+                            'job_post_id'        => $jobId,
+                            'position'           => $position,
+                            'office'             => $office,
+                            'date'               => now()->format('F d, Y'),
+                            'ip'                 => $request->ip(),
+                            'user_agent'         => $request->header('User-Agent'),
+                            'education_remark'   => $submission->education_remark   ?? 'N/A',
+                            'experience_remark'  => $submission->experience_remark  ?? 'N/A',
+                            'training_remark'    => $submission->training_remark    ?? 'N/A',
+                            'eligibility_remark' => $submission->eligibility_remark ?? 'N/A',
+                        ])
+                        ->log("{$user->name} sent an unqualified notification to {$fullname} for the {$position} position in {$office}.");
+                }
+
+                $count++;
+            } catch (\Exception $e) {
+            }
+        }
+
         return response()->json([
-            'success' => false,
-            'message' => 'No Unqualified applicants found for this job post.'
-        ], 404);
+            'success' => true,
+            'message' => "Unqualified email notifications sent to {$count} applicant(s)."
+        ]);
     }
-
-    $job = \App\Models\JobBatchesRsp::with('criteria:id,job_batches_rsp_id,Education,Eligibility,Training,Experience')
-        ->find($jobId);
-
-    $position       = $job->Position         ?? '';
-    $office         = $job->Office           ?? '';
-    $education_qs   = $job->criteria->Education   ?? '';
-    $eligibility_qs = $job->criteria->Eligibility ?? '';
-    $training_qs    = $job->criteria->Training    ?? '';
-    $experience_qs  = $job->criteria->Experience  ?? '';
-
-    $count = 0;
-
-    foreach ($submissions as $submission) {
-
-        // =====================
-        // EXTERNAL — has nPersonalInfo_id
-        // =====================
-        $isExternal = !is_null($submission->nPersonalInfo_id);
-
-        if ($isExternal) {
-            $applicant = $submission->nPersonalInfo;
-
-            if (!$applicant) {
-                continue;
-            }
-
-         $fullname = trim(ucwords(strtolower("{$applicant->firstname} {$applicant->lastname}")));
-            $email         = $applicant->email_address    ?? null;
-            $contactNumber = $applicant->cellphone_number ?? null;
-
-            $street   = $applicant->residential_street   ?? '';
-            $barangay = $applicant->residential_barangay ?? '';
-            $city     = $applicant->residential_city     ?? '';
-            $province = $applicant->residential_province ?? '';
-            $purok    = $applicant->Rpurok               ?? '';
-            $lastname = $applicant->lastname             ?? '';
-
-            // $educationRecords   = $submission->getEducationRecordsExternal();  // ✅
-            // $experienceRecords  = $submission->getExperienceRecordsExternal();
-            // $trainingRecords    = $submission->getTrainingRecordsExternal();
-            // $eligibilityRecords = $submission->getEligibilityRecordsExternal();
-
-            // $educationText   = $this->formatEducationForEmailExternal($educationRecords);   // ✅
-            // $experienceText  = $this->formatExperienceForEmailExternal($experienceRecords);
-            // $trainingText    = $this->formatTrainingForEmailExternal($trainingRecords);
-            // $eligibilityText = $this->formatEligibilityForEmailExternal($eligibilityRecords);
-
-        // =====================
-        // INTERNAL — has ControlNo
-        // =====================
-        } else {
-            $internalApplicant = DB::table('xPersonalAddt')
-                ->join('xPersonal', 'xPersonalAddt.ControlNo', '=', 'xPersonal.ControlNo')
-                ->where('xPersonalAddt.ControlNo', $submission->ControlNo)
-                ->select(
-                    'xPersonal.Firstname',
-                    'xPersonal.Surname',
-                    'xPersonalAddt.EmailAdd',
-                    'xPersonalAddt.Rpurok',
-                    'xPersonalAddt.Rstreet',
-                    'xPersonalAddt.Rbarangay',
-                    'xPersonalAddt.Rcity',
-                    'xPersonalAddt.Rprovince',
-                    'xPersonalAddt.CellphoneNo as cellphone_number'
-                )
-                ->first();
-
-            if (!$internalApplicant) {
-                continue;
-            }
-
-            // $fullname      = trim("{$internalApplicant->Firstname} {$internalApplicant->Surname}");
-            $fullname = trim(ucwords(strtolower("{$internalApplicant->Firstname} {$internalApplicant->Surname}")));
-            $email         = $internalApplicant->EmailAdd        ?? null;
-            $contactNumber = $internalApplicant->cellphone_number ?? null;
-
-            $street   = $internalApplicant->Rstreet   ?? '';
-            $barangay = $internalApplicant->Rbarangay ?? '';
-            $city     = $internalApplicant->Rcity     ?? '';
-            $province = $internalApplicant->Rprovince ?? '';
-            $purok    = $internalApplicant->Rpurok    ?? '';
-            $lastname = $internalApplicant->Surname   ?? '';
-
-            // $educationRecords   = $submission->getEducationRecordsInternal();  // ✅
-            // $experienceRecords  = $submission->getExperienceRecordsInternal($submission->ControlNo);
-            // $trainingRecords    = $submission->getTrainingRecordsInternal();
-            // $eligibilityRecords = $submission->getEligibilityRecordsInternal();
-
-            // $educationText   = $this->formatEducationForEmailInternal($educationRecords);   // ✅
-            // $experienceText  = $this->formatExperienceForEmailInternal($experienceRecords);
-            // $trainingText    = $this->formatTrainingForEmailInternal($trainingRecords);
-            // $eligibilityText = $this->formatEligibilityForEmailInternal($eligibilityRecords);
-        }
-
-        if (empty($email)) {
-            continue;
-        }
-
-        try {
-            Mail::to($email)->queue((new EmailApi(
-                "Application - Unqualified",
-                'mail-template.unqualified',
-                [
-                    'fullname'  => $fullname,
-                    'lastname'  => $lastname,
-                    'Rpurok'    => $purok,
-                    'street'    => $street,
-                    'barangay'  => $barangay,
-                    'city'      => $city,
-                    'province'  => $province,
-                    'position'  => $position,
-                    'office'    => $office,
-
-                    // 'education_qualification'   => $educationText,
-                    // 'experience_qualification'  => $experienceText,
-                    // 'training_qualification'    => $trainingText,
-                    // 'eligibility_qualification' => $eligibilityText,
-
-                    'education_remark'   => $submission->education_remark   ?? '',
-                    'experience_remark'  => $submission->experience_remark  ?? '',
-                    'training_remark'    => $submission->training_remark    ?? '',
-                    'eligibility_remark' => $submission->eligibility_remark ?? '',
-
-                    'education_qs'   => $education_qs,
-                    'eligibility_qs' => $eligibility_qs,
-                    'training_qs'    => $training_qs,
-                    'experience_qs'  => $experience_qs,
-
-                    'date' => now()->format('F d, Y'),
-                ]
-            ))->onQueue('emails'));
-
-            $submission->update(['is_emailed' => true]);
-
-            $this->dispatchSmsUnqualified(
-                contactNumber: $contactNumber,
-                fullname: $fullname,
-                position: $position,
-                office: $office,
-            );
-
-            EmailLog::create([
-                'email'    => $email,
-                'activity' => 'Unqualified',
-            ]);
-
-            $user = Auth::user();
-            if ($user instanceof \App\Models\User) {
-                activity('Unqualified Applicant Email Sent')
-                    ->causedBy($user)
-                    ->performedOn($submission)
-                    ->withProperties([
-                        'name'               => $user->name,
-                        'username'           => $user->username,
-                        'applicant_name'     => $fullname,
-                        'applicant_type'     => $isExternal ? 'EXTERNAL' : 'INTERNAL', // ✅
-                        'email'              => $email,
-                        'job_post_id'        => $jobId,
-                        'position'           => $position,
-                        'office'             => $office,
-                        'date'               => now()->format('F d, Y'),
-                        'ip'                 => $request->ip(),
-                        'user_agent'         => $request->header('User-Agent'),
-                        'education_remark'   => $submission->education_remark   ?? 'N/A',
-                        'experience_remark'  => $submission->experience_remark  ?? 'N/A',
-                        'training_remark'    => $submission->training_remark    ?? 'N/A',
-                        'eligibility_remark' => $submission->eligibility_remark ?? 'N/A',
-                    ])
-                    ->log("{$user->name} sent an unqualified notification to {$fullname} for the {$position} position in {$office}.");
-            }
-
-            $count++;
-        } catch (\Exception $e) {
-            // Log::error("❌ Failed to send email/SMS for {$fullname}: {$e->getMessage()}");
-        }
-    }
-
-    return response()->json([
-        'success' => true,
-        'message' => "Unqualified email notifications sent to {$count} applicant(s)."
-    ]);
-}
 
 
 
@@ -1799,7 +1776,7 @@ public function cancelEmailExamination($scheduleExamId)
     public function formatExperienceForEmailExternal($experienceRecords)
     {
         if ($experienceRecords->isEmpty()) {
-          return '';
+            return '';
         }
 
         $formatted = [];
@@ -1842,12 +1819,12 @@ public function cancelEmailExamination($scheduleExamId)
         $formatted = [];
         foreach ($eligibilityRecords as $eligibility) {
             $name = $eligibility->eligibility ?? '';
-               $rating = !empty($eligibility->rating)
-            ? ' - Rating: ' . number_format(
-                floor((float)$eligibility->rating * 100) / 100,
-                2
-            )
-            : '';
+            $rating = !empty($eligibility->rating)
+                ? ' - Rating: ' . number_format(
+                    floor((float)$eligibility->rating * 100) / 100,
+                    2
+                )
+                : '';
             $formatted[] = "• {$name}{$rating}";
         }
 
@@ -1925,12 +1902,12 @@ public function cancelEmailExamination($scheduleExamId)
             $name = $eligibility->CivilServe ?? '';
 
             // ✅ use Rates safely
-             $rating = !empty($eligibility->Rates)
-            ? ' - Rating: ' . number_format(
-                floor((float)$eligibility->Rates * 100) / 100,
-                2
-            )
-            : '';
+            $rating = !empty($eligibility->Rates)
+                ? ' - Rating: ' . number_format(
+                    floor((float)$eligibility->Rates * 100) / 100,
+                    2
+                )
+                : '';
             $formatted[] = "• {$name}{$rating}";
         }
 
@@ -2112,5 +2089,219 @@ public function cancelEmailExamination($scheduleExamId)
             'success' => true,
             'message' => "Unqualified email notifications sent to {$count} applicant(s)."
         ]);
+    }
+
+    // not chosen applicant send emai;
+    public function sendEmailApplicantNotChosenBatch($validated, $request)
+    {
+        $jobId = $validated['job_batches_rsp_id'];
+
+
+        // throw error if there is no hire on the job post before proceed
+        $jobHired = Submission::where('job_batches_rsp_id', $jobId)
+            ->where('status', 'Hired')
+            ->exists();
+
+        if (!$jobHired) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No hired applicant found for this job post. Please hire an applicant first before sending emails to those not chosen.'
+            ], 422);
+        }
+
+        $submissions = Submission::where('job_batches_rsp_id', $jobId)
+            ->with('nPersonalInfo')
+            ->where('status', 'qualified')
+            ->get();
+
+        if ($submissions->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No Unqualified applicants found for this job post.'
+            ], 404);
+        }
+
+        $job = \App\Models\JobBatchesRsp::with('criteria:id,job_batches_rsp_id,Education,Eligibility,Training,Experience')
+            ->find($jobId);
+
+        $position       = $job->Position         ?? '';
+        $office         = $job->Office           ?? '';
+        // $education_qs   = $job->criteria->Education   ?? '';
+        // $eligibility_qs = $job->criteria->Eligibility ?? '';
+        // $training_qs    = $job->criteria->Training    ?? '';
+        // $experience_qs  = $job->criteria->Experience  ?? '';
+
+        $count = 0;
+
+        foreach ($submissions as $submission) {
+
+            // =====================
+            // EXTERNAL — has nPersonalInfo_id
+            // =====================
+            $isExternal = !is_null($submission->nPersonalInfo_id);
+
+            if ($isExternal) {
+                $applicant = $submission->nPersonalInfo;
+
+                if (!$applicant) {
+                    continue;
+                }
+
+                $fullname = trim(ucwords(strtolower("{$applicant->firstname} {$applicant->lastname}")));
+                $email         = $applicant->email_address    ?? null;
+                $contactNumber = $applicant->cellphone_number ?? null;
+
+                $street   = $applicant->residential_street   ?? '';
+                $barangay = $applicant->residential_barangay ?? '';
+                $city     = $applicant->residential_city     ?? '';
+                $province = $applicant->residential_province ?? '';
+                $purok    = $applicant->Rpurok               ?? '';
+                $lastname = $applicant->lastname             ?? '';
+
+
+                // =====================
+                // INTERNAL — has ControlNo
+                // =====================
+            } else {
+                $internalApplicant = DB::table('xPersonalAddt')
+                    ->join('xPersonal', 'xPersonalAddt.ControlNo', '=', 'xPersonal.ControlNo')
+                    ->where('xPersonalAddt.ControlNo', $submission->ControlNo)
+                    ->select(
+                        'xPersonal.Firstname',
+                        'xPersonal.Surname',
+                        'xPersonalAddt.EmailAdd',
+                        'xPersonalAddt.Rpurok',
+                        'xPersonalAddt.Rstreet',
+                        'xPersonalAddt.Rbarangay',
+                        'xPersonalAddt.Rcity',
+                        'xPersonalAddt.Rprovince',
+                        'xPersonalAddt.CellphoneNo as cellphone_number'
+                    )
+                    ->first();
+
+                if (!$internalApplicant) {
+                    continue;
+                }
+
+                // $fullname      = trim("{$internalApplicant->Firstname} {$internalApplicant->Surname}");
+                $fullname = trim(ucwords(strtolower("{$internalApplicant->Firstname} {$internalApplicant->Surname}")));
+                $email         = $internalApplicant->EmailAdd        ?? null;
+                $contactNumber = $internalApplicant->cellphone_number ?? null;
+
+                $street   = $internalApplicant->Rstreet   ?? '';
+                $barangay = $internalApplicant->Rbarangay ?? '';
+                $city     = $internalApplicant->Rcity     ?? '';
+                $province = $internalApplicant->Rprovince ?? '';
+                $purok    = $internalApplicant->Rpurok    ?? '';
+                $lastname = $internalApplicant->Surname   ?? '';
+            }
+
+            if (empty($email)) {
+                continue;
+            }
+
+            try {
+                Mail::to($email)->queue((new EmailApi(
+                    "Application - Unqualified",
+                    'mail-template.applicant-not-chosen',
+                    [
+                        'fullname'  => $fullname,
+                        'lastname'  => $lastname,
+                        'Rpurok'    => $purok,
+                        'street'    => $street,
+                        'barangay'  => $barangay,
+                        'city'      => $city,
+                        'province'  => $province,
+                        'position'  => $position,
+                        'office'    => $office,
+
+
+
+                        // 'education_remark'   => $submission->education_remark   ?? '',
+                        // 'experience_remark'  => $submission->experience_remark  ?? '',
+                        // 'training_remark'    => $submission->training_remark    ?? '',
+                        // 'eligibility_remark' => $submission->eligibility_remark ?? '',
+
+                        // 'education_qs'   => $education_qs,
+                        // 'eligibility_qs' => $eligibility_qs,
+                        // 'training_qs'    => $training_qs,
+                        // 'experience_qs'  => $experience_qs,
+
+                        'date' => now()->format('F d, Y'),
+                    ]
+                ))->onQueue('emails'));
+
+                $submission->update(['is_emailed' => true]);
+
+                $this->dispatchSmsNotChosen(
+                    contactNumber: $contactNumber,
+                    fullname: $fullname,
+                    position: $position,
+                    office: $office,
+                );
+
+                EmailLog::create([
+                    'email'    => $email,
+                    'activity' => 'Unqualified',
+                ]);
+
+                $user = Auth::user();
+                if ($user instanceof \App\Models\User) {
+                    activity('Applicant not chosen email sent')
+                        ->causedBy($user)
+                        ->performedOn($submission)
+                        ->withProperties([
+                            'name'               => $user->name,
+                            'username'           => $user->username,
+                            'applicant_name'     => $fullname,
+                            'applicant_type'     => $isExternal ? 'EXTERNAL' : 'INTERNAL', // ✅
+                            'email'              => $email,
+                            'job_post_id'        => $jobId,
+                            'position'           => $position,
+                            'office'             => $office,
+                            'date'               => now()->format('F d, Y'),
+                            'ip'                 => $request->ip(),
+                            'user_agent'         => $request->header('User-Agent'),
+                            // 'education_remark'   => $submission->education_remark   ?? 'N/A',
+                            // 'experience_remark'  => $submission->experience_remark  ?? 'N/A',
+                            // 'training_remark'    => $submission->training_remark    ?? 'N/A',
+                            // 'eligibility_remark' => $submission->eligibility_remark ?? 'N/A',
+                        ])
+                        ->log("{$user->name} sent an  not chosen notification to {$fullname} for the {$position} position in {$office}.");
+                }
+
+                $count++;
+            } catch (\Exception $e) {
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => "Not chosen email notifications sent to {$count} applicant(s)."
+        ]);
+    }
+
+    private function dispatchSmsNotChosen(
+        ?string $contactNumber,
+        string  $fullname,
+        string  $position,
+        string  $office,
+    ): void {
+        $normalized = $this->normalizePhoneNumber($contactNumber);
+
+        if (!$normalized) {
+
+            return;
+        }
+
+        $smsMessage = "Dear {$fullname},\n\n"
+            . "We regret to inform you that your application did not meet the qualification standards.\n\n"
+            . "Position : {$position}\n"
+            . "Office   : {$office}\n\n"
+            . "Please check your email for the full details.\n\n"
+            . "Thank you!";
+
+        SendApplicantSms::dispatch($normalized, $smsMessage)
+            ->onQueue('sms');
     }
 }

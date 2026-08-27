@@ -619,7 +619,7 @@ class ApplicantHiringService
                     unset($newRow['PMID']);
 
                     $newRow['SepDate']  = Carbon::parse($fromDate)->subDay()->format('m/d/Y');
-                    $newRow['SepCause'] = 'RE-APPOINTMENT';
+                    $newRow['SepCause'] = 'REAPPOINTMENT';
                     $newRow['FromDate'] = Carbon::parse($fromDate)->subDay()->format('Y-m-d H:i:s');
                     $newRow['ToDate']   = Carbon::parse($fromDate)->subDay()->format('Y-m-d H:i:s');
 
@@ -630,7 +630,7 @@ class ApplicantHiringService
                         ->where('PMID', $activeService->PMID)
                         ->update([
                             'SepDate'  => Carbon::parse($fromDate)->subDay()->format('m/d/Y'),
-                            'SepCause' => 'RE-APPOINTMENT',
+                            'SepCause' => 'REAPPOINTMENT',
                         ]);
                 }
 

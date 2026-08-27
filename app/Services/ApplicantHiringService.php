@@ -21,8 +21,8 @@ class ApplicantHiringService
 
 
 {
-     // hire an employee
-    public function hireApplicant($submissionId,$request)
+    // hire an employee
+    public function hireApplicant($submissionId, $request)
     {
 
 
@@ -117,7 +117,7 @@ class ApplicantHiringService
                 // $existingControlNo
                 if (!$alreadyInXPersonal) {
                     $this->insertPersonalInfo($applicant, $family,  $personal_declarations, $finalControlNo, $submissionId);
-                    $this->insertxPersonalAddt($applicant,$family, $personal_declarations, $finalControlNo, $submissionId);
+                    $this->insertxPersonalAddt($applicant, $family, $personal_declarations, $finalControlNo, $submissionId);
                     $this->insertChildren($applicant->children, $finalControlNo, $submissionId);
                     $this->insertWorkExperience($applicant->work_experience, $finalControlNo, $submissionId);
                     $this->insertEligibility($applicant->eligibity, $finalControlNo, $submissionId);
@@ -152,7 +152,7 @@ class ApplicantHiringService
             // Update plantilla structure
             // $SepDate_service  = $request->input('SepDate');
             // $SepCause_service = $request->input('SepCause');
-            $this->updatePlantillaStructure($jobPost, $finalControlNo, $SepDate_service, $SepCause_service,$sepdate, $sepcause, $vicename, $vicecause, $fromDate, $submissionId);
+            $this->updatePlantillaStructure($jobPost, $finalControlNo, $SepDate_service, $SepCause_service, $sepdate, $sepcause, $vicename, $vicecause, $fromDate, $submissionId);
 
             // ✅ Send email notification to the hired applicant
             $internalApplicant = DB::table('xPersonalAddt')
@@ -227,7 +227,7 @@ class ApplicantHiringService
         return str_pad($nextNumber, 6, '0', STR_PAD_LEFT);
     }
 
-    private function insertPersonalInfo($applicant, $family,  $personal_declarations, $controlNo,$submissionId)
+    private function insertPersonalInfo($applicant, $family,  $personal_declarations, $controlNo, $submissionId)
     {
         DB::table('xPersonal')->insert([
             'ControlNo'    => $controlNo,
@@ -239,11 +239,11 @@ class ApplicantHiringService
             'BirthDate'    => $this->upper($applicant->date_of_birth),
             'BirthPlace'   => $this->upper($applicant->place_of_birth),
             'Address'      => $this->upper(trim(($applicant->residential_house) . ' ' .
-                             ($applicant->Rpurok) . ' ' .
-                            ($applicant->residential_street) . ' ' .
-                            ($applicant->residential_barangay) . ' ' .
-                            ($applicant->residential_city) . ' ' .
-                            ($applicant->residential_province))),
+                ($applicant->Rpurok) . ' ' .
+                ($applicant->residential_street) . ' ' .
+                ($applicant->residential_barangay) . ' ' .
+                ($applicant->residential_city) . ' ' .
+                ($applicant->residential_province))),
 
 
             'Citizenship'  => $this->upper($applicant->citizenship),
@@ -263,7 +263,7 @@ class ApplicantHiringService
             'MaidenName'   => $this->upper($family->spouse_middlename),
             'SpouseName'   => $this->upper($family->spouse_name),
             'Occupation'   => $this->upper($family->spouse_occupation),
-           // need to fix identify the  what is the q-r
+            // need to fix identify the  what is the q-r
             // 34
             'Q1' =>  $personal_declarations->{'question_34a'} ?? 'No',
             'R11' => $personal_declarations->{'question_34b'} ?? 'No',
@@ -309,7 +309,7 @@ class ApplicantHiringService
         ]);
     }
 
-    private function insertPWD( $personal_declarations, $controlNo, $submissionId)
+    private function insertPWD($personal_declarations, $controlNo, $submissionId)
     {
         DB::table('xPWD')->insert([
             'Controlno'    => $controlNo,
@@ -363,7 +363,7 @@ class ApplicantHiringService
         ]);
     }
 
-    private function insertxPersonalAddt($applicant,$family,$personal_declarations, $controlNo, $submissionId)
+    private function insertxPersonalAddt($applicant, $family, $personal_declarations, $controlNo, $submissionId)
     {
         DB::table('xPersonalAddt')->insert([
             'ControlNo'    => $controlNo,
@@ -417,7 +417,7 @@ class ApplicantHiringService
 
             'Rhouse' => $this->upper($applicant->residential_house),
             'Rstreet'      =>  $this->upper($applicant->residential_street),
-            'Rpurok'      =>$this->upper( $applicant->Rpurok),
+            'Rpurok'      => $this->upper($applicant->Rpurok),
             'Rsubdivision'      =>  $this->upper($applicant->residential_subdivision),
             'Rbarangay'      =>  $this->upper($applicant->residential_barangay),
             'Rprovince'      =>  $this->upper($applicant->residential_province),
@@ -426,12 +426,12 @@ class ApplicantHiringService
             'Rzip'      =>  $applicant->residential_zip ?? '',
 
             'Pregion'      => $this->upper($applicant->permanent_region),
-            'Phouse'      =>$this->upper($applicant->permanent_house),
+            'Phouse'      => $this->upper($applicant->permanent_house),
             'Ppurok'      => $this->upper($applicant->Ppurok),
             'Pstreet'      => $this->upper($applicant->permanent_street),
-            'Psubdivision'      => $this->upper($applicant->permanent_subdivision ),
+            'Psubdivision'      => $this->upper($applicant->permanent_subdivision),
             'Pbarangay'      => $this->upper($applicant->permanent_barangay),
-            'Pcity'      =>$this->upper( $applicant->permanent_city),
+            'Pcity'      => $this->upper($applicant->permanent_city),
             'Pprovince'      => $this->upper($applicant->permanent_province),
             'Pzip'      => $applicant->permanent_zip ?? '',
 
@@ -442,7 +442,7 @@ class ApplicantHiringService
 
             'countrydetails'      => '',
             'datefiled'      => '',
-            'gender'      =>$this->upper( $applicant->gender_prefer),
+            'gender'      => $this->upper($applicant->gender_prefer),
             'citizenshipStatus'      => $this->upper($applicant->citizenship_status),
             'birthcountry'      => '',
             'submission_id' => $submissionId
@@ -594,7 +594,7 @@ class ApplicantHiringService
         }
     }
 
-    private function updatePlantillaStructure($jobPost, $controlNo, $SepDate_service, $SepCause_service,$sepdate, $sepcause, $vicename, $vicecause, $fromDate, $submissionId)
+    private function updatePlantillaStructure($jobPost, $controlNo, $SepDate_service, $SepCause_service, $sepdate, $sepcause, $vicename, $vicecause, $fromDate, $submissionId)
     {
 
         $tblStructureDetails_ID = $jobPost->tblStructureDetails_ID;
@@ -602,35 +602,45 @@ class ApplicantHiringService
         $pageNo = $jobPost->PageNo;
 
 
-            $activeService = DB::table('xService')
+        $activeService = DB::table('xService')
             ->where('ControlNo', $controlNo)
             ->orderBy('ToDate', 'DESC')
             ->orderBy('FromDate', 'DESC')
             ->first();
 
         if ($activeService) {
-            if (!empty($activeService->SepDate)) {
-                // May laman na ang SepDate — mag-duplicate ng row bago i-set ang bago
-                $newRow = (array) $activeService;
 
-                // Alisin ang PMID para hindi mag-conflict (auto-increment ito)
-                unset($newRow['PMID']);
+            // Regular / Casual — dapat magkaroon ng SepDate at SepCause = 'Re-appointment'
+            if (in_array($activeService->Status, ['REGULAR', 'CASUAL'])) {
 
-                // I-overwrite yung SepDate at SepCause sa bagong row
-                $newRow['SepDate']  = Carbon::parse($fromDate)->subDay()->format('Y-m-d');
-                $newRow['SepCause'] = $SepCause_service ?? '';
-                  $newRow['FromDate'] = Carbon::parse($fromDate)->subDay()->format('Y-m-d H:i:s');
-                $newRow['ToDate']   = Carbon::parse($fromDate)->subDay()->format('Y-m-d H:i:s');
+                if (!empty($activeService->SepDate)) {
+                    // May laman na ang SepDate — mag-duplicate ng row bago i-set ang bago
+                    $newRow = (array) $activeService;
+                    unset($newRow['PMID']);
 
-                DB::table('xService')->insert($newRow);
+                    $newRow['SepDate']  = Carbon::parse($fromDate)->subDay()->format('m/d/Y');
+                    $newRow['SepCause'] = 'RE-APPOINTMENT';
+                    $newRow['FromDate'] = Carbon::parse($fromDate)->subDay()->format('Y-m-d H:i:s');
+                    $newRow['ToDate']   = Carbon::parse($fromDate)->subDay()->format('Y-m-d H:i:s');
 
-            } else {
-                // Wala pang laman — direkta na lang i-update
+                    DB::table('xService')->insert($newRow);
+                } else {
+                    // Wala pang laman — direkta na lang i-update
+                    DB::table('xService')
+                        ->where('PMID', $activeService->PMID)
+                        ->update([
+                            'SepDate'  => Carbon::parse($fromDate)->subDay()->format('m/d/Y'),
+                            'SepCause' => 'RE-APPOINTMENT',
+                        ]);
+                }
+
+                // JobOrder / Honorarium / Contractual — walang SepDate/SepCause, pero renew = 'ORIGINAL'
+            } elseif (in_array($activeService->Status, ['JOB ORDER', 'JO', 'CONTRACTUAL', 'HONORARIUM'])) {
+
                 DB::table('xService')
                     ->where('PMID', $activeService->PMID)
                     ->update([
-                        'SepDate'  => Carbon::parse($fromDate)->subDay()->format('Y-m-d'),
-                        'SepCause' => $SepCause_service ?? '',
+                        'renew' => 'ORIGINAL',
                     ]);
             }
         }
@@ -672,7 +682,7 @@ class ApplicantHiringService
 
         //fromDate will be inputed
 
-        $toDate   = $fromDate->copy()->addYears(50);
+        $toDate = Carbon::parse('2050-12-31 00:00:00');
 
         $Division = DB::table('yDivision')
             ->where('Descriptions', $jobPost->Division)
@@ -700,17 +710,17 @@ class ApplicantHiringService
             ->where('ToDate', '>', $fromDate)
             ->get();
 
-            foreach ($rowsToModify as $row) {
-                DB::table('hire_service_snapshots')->insert([
-                    'submission_id'   => $submissionId,
-                    'PMID'            => $row->PMID,
-                    'original_ToDate' => $row->ToDate,  // save original
-                    'created_at'      => now(),
-                    'updated_at'      => now(),
-                ]);
-            }
+        foreach ($rowsToModify as $row) {
+            DB::table('hire_service_snapshots')->insert([
+                'submission_id'   => $submissionId,
+                'PMID'            => $row->PMID,
+                'original_ToDate' => $row->ToDate,  // save original
+                'created_at'      => now(),
+                'updated_at'      => now(),
+            ]);
+        }
 
-         DB::table('xService')
+        DB::table('xService')
             ->where('ControlNo', $controlNo)
             ->where('ToDate', '>', $fromDate)
             ->update(['ToDate' => Carbon::parse($fromDate)->subDay()]); // 1
@@ -723,7 +733,7 @@ class ApplicantHiringService
 
         $renewType = $this->determineRenewType($employeeStatus); // ← idagdag ito
 
-           $structure = DB::table('tblStructureDetails')
+        $structure = DB::table('tblStructureDetails')
             ->where('ID', $jobPost->tblStructureDetails_ID)
             ->where('PageNo', $jobPost->PageNo)
             ->where('ItemNo', $jobPost->ItemNo)
@@ -759,17 +769,17 @@ class ApplicantHiringService
             'Charges'      => '',
             'effectiveDate'      => $fromDate->format('Y-m-d H:i:s'),
             'submission_id' => $submissionId,
-            'itemNo'        =>$itemNo,
+            'itemNo'        => $itemNo,
             'Pages'         => $pageNo,
             'StructureID'   => $structure->StructureID ?? null,
         ]);
 
-     
+
         //  get the renew 
 
         DB::table('tempRegAppointmentReorg')->insert([
             // 'ID'            => $nextId,
-            'ControlNo'     => $controlNo,//1
+            'ControlNo'     => $controlNo, //1
             'DesigCode'     => $designation->Codes ?? null, //1
             'NewDesignation' => $designation->Descriptions ?? $jobPost->Position, //1
             'Designation'   => $designation->Descriptions ?? $jobPost->Position, //1
@@ -801,14 +811,14 @@ class ApplicantHiringService
 
         // get the temRegExt
         $temPregExt = DB::table('vwPositiondescription')
-        ->where('Designation', $jobPost->Position)
-        ->orderBy('ID', 'desc')
-        ->first();
+            ->where('Designation', $jobPost->Position)
+            ->orderBy('ID', 'desc')
+            ->first();
 
         // qs of jobpost
-        $qs = OnCriteriaJob::where('job_batches_rsp_id',$jobPost->id)->first();
+        $qs = OnCriteriaJob::where('job_batches_rsp_id', $jobPost->id)->first();
 
-        
+
         DB::table('tempRegAppointmentReorgExt')->insert([
             // 'ID'            => $nextId,
             'ControlNo'     => $controlNo,
@@ -833,7 +843,7 @@ class ApplicantHiringService
             'WorkingOthers'     => $temPregExt->WorkingOthers ?? null,
 
             'DescriptionSection'   => $temPregExt->DescriptionSection ?? null,
-            'DescriptionFunction'  => $temPregExt->DescriptionFunction?? null,
+            'DescriptionFunction'  => $temPregExt->DescriptionFunction ?? null,
 
             'StandardEduc'      => $qs->Education ?? null,
             'StandardExp'       => $qs->Experience ?? null,
@@ -870,9 +880,9 @@ class ApplicantHiringService
 
         DB::table('posting_date')->insert([
             'ControlNo'     => $controlNo, //1
-            'post_date' =>$jobPost->post_date,
+            'post_date' => $jobPost->post_date,
             'end_date' => $jobPost->end_date,
-            'job_batches_rsp_id' =>$jobPost->id,
+            'job_batches_rsp_id' => $jobPost->id,
             'submission_id' => $submissionId
         ]);
     }
@@ -914,7 +924,7 @@ class ApplicantHiringService
             JobBatchesRsp::where('id', $rollback->job_batches_rsp_id)
                 ->update(['status' => $rollback->prev_job_post_status]);
 
-                $snapshots = DB::table('hire_service_snapshots')
+            $snapshots = DB::table('hire_service_snapshots')
                 ->where('submission_id', $submissionId)
                 ->get();
 
@@ -929,8 +939,8 @@ class ApplicantHiringService
                 ->delete();
 
             // Table 1
-           DB::table('xPersonal')
-           ->where('ControlNo',  $rollback->controlNo)
+            DB::table('xPersonal')
+                ->where('ControlNo',  $rollback->controlNo)
                 ->where('submission_id',  $rollback->submission_id)
                 ->delete();
 
@@ -1058,23 +1068,23 @@ class ApplicantHiringService
     }
 
     private function determineRenewType($employeeStatus)
-{
-    // External applicant — walang naunang xService record
-    if (!$employeeStatus) {
-        return 'ORIGINAL';
+    {
+        // External applicant — walang naunang xService record
+        if (!$employeeStatus) {
+            return 'ORIGINAL';
+        }
+
+        $status = strtoupper(trim($employeeStatus->Status ?? ''));
+
+        if (in_array($status, ['JOB ORDER', 'JO', 'CASUAL', 'CONTRACTUAL', 'HONORARIUM'])) {
+            return 'ORIGINAL';
+        }
+
+        if ($status === 'REGULAR') {
+            return 'PROMOTION';
+        }
+
+        // fallback default kung ibang status (e.g. COTERMINOUS, ELECTIVE, atbp.)
+        return '';
     }
-
-    $status = strtoupper(trim($employeeStatus->Status ?? ''));
-
-    if (in_array($status, ['JOB ORDER', 'JO', 'CASUAL','CONTRACTUAL','HONORARIUM'])) {
-        return 'ORIGINAL';
-    }
-
-    if ($status === 'REGULAR') {
-        return 'PROMOTION';
-    }
-
-    // fallback default kung ibang status (e.g. COTERMINOUS, ELECTIVE, atbp.)
-    return 'REAPPOINTMENT PURSUANT TO RA6656';
-}
 }

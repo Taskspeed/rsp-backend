@@ -619,8 +619,11 @@ class ApplicantHiringService
                 // I-overwrite yung SepDate at SepCause sa bagong row
                 $newRow['SepDate']  = Carbon::parse($fromDate)->subDay()->format('Y-m-d');
                 $newRow['SepCause'] = $SepCause_service ?? '';
+                  $newRow['FromDate'] = Carbon::parse($fromDate)->subDay()->format('Y-m-d H:i:s');
+                $newRow['ToDate']   = Carbon::parse($fromDate)->subDay()->format('Y-m-d H:i:s');
 
                 DB::table('xService')->insert($newRow);
+
             } else {
                 // Wala pang laman — direkta na lang i-update
                 DB::table('xService')
@@ -710,7 +713,7 @@ class ApplicantHiringService
          DB::table('xService')
             ->where('ControlNo', $controlNo)
             ->where('ToDate', '>', $fromDate)
-            ->update(['ToDate' => Carbon::parse($fromDate)->subDay()]);
+            ->update(['ToDate' => Carbon::parse($fromDate)->subDay()]); // 1
 
         $employeeStatus = xService::select(['ControlNo', 'FromDate', 'ToDate', 'Status'])
             ->latest('FromDate', 'ToDate')

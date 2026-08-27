@@ -602,20 +602,34 @@ class ApplicantHiringService
         $pageNo = $jobPost->PageNo;
 
 
-        $activeService = DB::table('xService')
-            ->where('ControlNo', $controlNo)   // ensure active record
-            ->orderBy('PMID', 'DESC')
+            $activeService = DB::table('xService')
+            ->where('ControlNo', $controlNo)
+            ->orderBy('ToDate', 'DESC')
+            ->orderBy('FromDate', 'DESC')
             ->first();
 
-       
-        // 2. If employee has active service, SepDate and SepCause are required
         if ($activeService) {
-            DB::table('xService')
-                ->where('PMID', $activeService->PMID)
-                ->update([
-                    'SepDate'  => Carbon::parse($SepDate_service)->format('Y-m-d'),
-                    'SepCause' =>  $SepCause_service,
-                ]);
+            if (!empty($activeService->SepDate)) {
+                // May laman na ang SepDate — mag-duplicate ng row bago i-set ang bago
+                $newRow = (array) $activeService;
+
+                // Alisin ang PMID para hindi mag-conflict (auto-increment ito)
+                unset($newRow['PMID']);
+
+                // I-overwrite yung SepDate at SepCause sa bagong row
+                $newRow['SepDate']  = Carbon::parse($fromDate)->subDay()->format('Y-m-d');
+                $newRow['SepCause'] = $SepCause_service ?? '';
+
+                DB::table('xService')->insert($newRow);
+            } else {
+                // Wala pang laman — direkta na lang i-update
+                DB::table('xService')
+                    ->where('PMID', $activeService->PMID)
+                    ->update([
+                        'SepDate'  => Carbon::parse($fromDate)->subDay()->format('Y-m-d'),
+                        'SepCause' => $SepCause_service ?? '',
+                    ]);
+            }
         }
 
 
@@ -712,7 +726,6 @@ class ApplicantHiringService
             ->where('ItemNo', $jobPost->ItemNo)
             ->first();
 
-
         DB::table('xService')->insert([
             'ControlNo'    => $controlNo, // 1
             'FromDate'     => $fromDate->format('Y-m-d H:i:s'), // 1
@@ -732,12 +745,12 @@ class ApplicantHiringService
             'SepDate'      => '',
             'SepCause'     => '',
             'AppCode'      => '0',
-            'DivCode'      => $DivCode ?? null, // 1
-            'Divisions'    => $jobPost->Division ?? null, // 1
-            'SecCode'      => $SecCode ?? null, // 1
-            'Sections'     => $jobPost->Section ?? null, // 1
-            'PlantCode'    => $jobPost->PlantCode ?? null, // 1
-            'Renew'        => $jobPost->Renew ?? null, // 1
+            'DivCode'      => $DivCode ?? '00000', // 1
+            'Divisions'    => $jobPost->Division ?? 'NONE', // 1
+            'SecCode'      => $SecCode ?? '00000', // 1
+            'Sections'     => $jobPost->Section ?? 'NONE', // 1
+            'PlantCode'    => '', // 1
+            'Renew'        => '', // 1
             'Grades'       => $jobPost->SalaryGrade ?? null, // 1
             'Steps'        => 1,
             'Charges'      => '',

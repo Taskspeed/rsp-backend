@@ -602,6 +602,49 @@ class ApplicantHiringService
         $pageNo = $jobPost->PageNo;
 
 
+        // $activeService = DB::table('xService')
+        //     ->where('ControlNo', $controlNo)
+        //     ->orderBy('ToDate', 'DESC')
+        //     ->orderBy('FromDate', 'DESC')
+        //     ->first();
+
+        // if ($activeService) {
+
+        //     // Regular / Casual — dapat magkaroon ng SepDate at SepCause = 'Re-appointment'
+        //     if (in_array($activeService->Status, ['REGULAR', 'CASUAL'])) {
+
+        //         if (!empty($activeService->SepDate)) {
+        //             // May laman na ang SepDate — mag-duplicate ng row bago i-set ang bago
+        //             $newRow = (array) $activeService;
+        //             unset($newRow['PMID']);
+
+        //             $newRow['SepDate']  = Carbon::parse($fromDate)->subDay()->format('m/d/Y');
+        //             $newRow['SepCause'] = 'REAPPOINTMENT';
+        //             $newRow['FromDate'] = Carbon::parse($fromDate)->subDay()->format('Y-m-d H:i:s');
+        //             $newRow['ToDate']   = Carbon::parse($fromDate)->subDay()->format('Y-m-d H:i:s');
+
+        //             DB::table('xService')->insert($newRow);
+        //         } else {
+        //             // Wala pang laman — direkta na lang i-update
+        //             DB::table('xService')
+        //                 ->where('PMID', $activeService->PMID)
+        //                 ->update([
+        //                     'SepDate'  => Carbon::parse($fromDate)->subDay()->format('m/d/Y'),
+        //                     'SepCause' => 'REAPPOINTMENT',
+        //                 ]);
+        //         }
+
+        //         // JobOrder / Honorarium / Contractual — walang SepDate/SepCause, pero renew = 'ORIGINAL'
+        //     } elseif (in_array($activeService->Status, ['JOB ORDER', 'JO', 'CONTRACTUAL', 'HONORARIUM'])) {
+
+        //         DB::table('xService')
+        //             ->where('PMID', $activeService->PMID)
+        //             ->update([
+        //                 'renew' => 'ORIGINAL',
+        //             ]);
+        //     }
+        // }
+
         $activeService = DB::table('xService')
             ->where('ControlNo', $controlNo)
             ->orderBy('ToDate', 'DESC')
@@ -610,8 +653,11 @@ class ApplicantHiringService
 
         if ($activeService) {
 
-            // Regular / Casual — dapat magkaroon ng SepDate at SepCause = 'Re-appointment'
+            // Regular / Casual — dapat magkaroon ng SepDate at SepCause
             if (in_array($activeService->Status, ['REGULAR', 'CASUAL'])) {
+
+                // CASUAL -> REAPPOINTMENT, REGULAR -> PROMOTION
+                $sepCause = ($activeService->Status === 'REGULAR') ? 'PROMOTION' : 'REAPPOINTMENT';
 
                 if (!empty($activeService->SepDate)) {
                     // May laman na ang SepDate — mag-duplicate ng row bago i-set ang bago
@@ -619,7 +665,7 @@ class ApplicantHiringService
                     unset($newRow['PMID']);
 
                     $newRow['SepDate']  = Carbon::parse($fromDate)->subDay()->format('m/d/Y');
-                    $newRow['SepCause'] = 'REAPPOINTMENT';
+                    $newRow['SepCause'] = $sepCause;
                     $newRow['FromDate'] = Carbon::parse($fromDate)->subDay()->format('Y-m-d H:i:s');
                     $newRow['ToDate']   = Carbon::parse($fromDate)->subDay()->format('Y-m-d H:i:s');
 
@@ -630,11 +676,11 @@ class ApplicantHiringService
                         ->where('PMID', $activeService->PMID)
                         ->update([
                             'SepDate'  => Carbon::parse($fromDate)->subDay()->format('m/d/Y'),
-                            'SepCause' => 'REAPPOINTMENT',
+                            'SepCause' => $sepCause,
                         ]);
                 }
 
-                // JobOrder / Honorarium / Contractual — walang SepDate/SepCause, pero renew = 'ORIGINAL'
+            // JobOrder / Honorarium / Contractual — walang SepDate/SepCause, pero renew = 'ORIGINAL'
             } elseif (in_array($activeService->Status, ['JOB ORDER', 'JO', 'CONTRACTUAL', 'HONORARIUM'])) {
 
                 DB::table('xService')
@@ -644,7 +690,6 @@ class ApplicantHiringService
                     ]);
             }
         }
-
 
         // Move old records to history, then delete old records<|fim_middle|><|fim_middle|><|fim_middle|>
         $oldRecords = DB::table('tempRegAppointmentReorg')->where('ControlNo', $controlNo)->get();

@@ -236,7 +236,7 @@ class ApplicantHiringService
             'Middlename'   =>  $this->upper($applicant->middlename),
             'Sex'          =>  $this->upper($applicant->sex),
             'CivilStatus'  => $this->upper($applicant->civil_status),
-            'BirthDate'    => $this->upper($applicant->date_of_birth),
+            'BirthDate'    => $this->formatDateTime($applicant->date_of_birth),
             'BirthPlace'   => $this->upper($applicant->place_of_birth),
             'Address'      => $this->upper(trim(($applicant->residential_house) . ' ' .
                 ($applicant->Rpurok) . ' ' .
@@ -457,7 +457,7 @@ class ApplicantHiringService
             DB::table('xChildren')->insert([
                 'ControlNo' => $controlNo,
                 'ChildName' =>  $this->upper($child->child_name),
-                'BirthDate' => $child->birth_date,
+                'BirthDate' => $this->formatDateTime($child->birth_date),
                 'submission_id' => $submissionId
             ]);
         }
@@ -468,8 +468,8 @@ class ApplicantHiringService
         foreach ($experiences ?? [] as $exp) {
             DB::table('xExperience')->insert([
                 'CONTROLNO'  => $controlNo,
-                'WFrom'      => $exp->work_date_from,
-                'WTo'        => $exp->work_date_to,
+                'WFrom'      => $this->formatDate($exp->work_date_from),
+                'WTo'        => $this->formatDate($exp->work_date_to),
                 'WPosition'  =>  $this->upper($exp->position_title),
                 'WCompany'   =>  $this->upper($exp->department),
                 'WSalary'    => $exp->monthly_salary,
@@ -521,8 +521,8 @@ class ApplicantHiringService
             DB::table('xNGO')->insert([
                 'CONTROLNO'   => $controlNo,
                 'OrgName'     =>  $this->upper($work->organization_name),
-                'DateFrom'    => $work->inclusive_date_from,
-                'DateTo'      => $work->inclusive_date_to,
+                'DateFrom'      => $this->formatDate($work->inclusive_date_from),
+                'DateTo'        => $this->formatDate($work->inclusive_date_to),
                 'NoHours'     => $work->number_of_hours,
                 'OrgPosition' => $work->position,
                 'submission_id' => $submissionId
@@ -540,8 +540,8 @@ class ApplicantHiringService
                 'Dates'       => ($train->inclusive_date_from ?? '') . ' - ' . ($train->inclusive_date_to ?? ''),
                 'NumHours'    => $train->number_of_hours ?? 0,
                 'Conductor'   =>  $this->upper($train->conducted_by),
-                'DateFrom'    => $train->inclusive_date_from ?? null,
-                'DateTo'      => $train->inclusive_date_to ?? null,
+                'DateFrom' => $this->parseDate($train->inclusive_date_from, 'm/d/Y'),
+                'DateTo'   => $this->parseDate($train->inclusive_date_to, 'm/d/Y'),
                 'Type'        =>  $this->upper($train->type),
                 'submission_id' => $submissionId
             ]);
@@ -636,7 +636,7 @@ class ApplicantHiringService
                             'SepCause' => $sepCause,
                         ]);
                 }
-                    // JobOrder / Honorarium / Contractual — check muna kung may laman na ang SepDate
+                // JobOrder / Honorarium / Contractual — check muna kung may laman na ang SepDate
             } elseif (in_array($activeService->Status, ['JOB ORDER', 'JO', 'CONTRACTUAL', 'HONORARIUM'])) {
 
                 if (!empty($activeService->SepDate)) {
@@ -1104,5 +1104,43 @@ class ApplicantHiringService
 
         // fallback default kung ibang status (e.g. COTERMINOUS, ELECTIVE, atbp.)
         return '';
+    }
+
+    private function formatDate($date)
+    {
+        if (empty($date)) {
+            return null;
+        }
+
+        try {
+            return \Carbon\Carbon::createFromFormat('d/m/Y', $date)->format('Y-m-d');
+        } catch (\Exception $e) {
+            return null; // or throw/log if you'd rather catch bad data
+        }
+    }
+
+    private function formatDateTime($date)
+    {
+        if (empty($date)) {
+            return null;
+        }
+
+        try {
+            return \Carbon\Carbon::createFromFormat('d/m/Y', $date)->format('Y-m-d H:i:s');
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
+    private function parseDate($date, $outputFormat = 'Y-m-d')
+    {
+        if (empty($date) || strtoupper((string) $date) === 'NULL') {
+            return null;
+        }
+
+        try {
+            return \Carbon\Carbon::createFromFormat('d/m/Y', $date)->format($outputFormat);
+        } catch (\Exception $e) {
+            return null;
+        }
     }
 }

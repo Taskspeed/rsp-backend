@@ -143,7 +143,6 @@ class EmailController extends Controller
 
         $result = $scheduleService->sendEmailApplicantNotChosenBatch($validated,$request);
 
-
         return $result;
     }
 

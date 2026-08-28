@@ -2096,7 +2096,6 @@ class ScheduleService
     {
         $jobId = $validated['job_batches_rsp_id'];
 
-
         // throw error if there is no hire on the job post before proceed
         $jobHired = Submission::where('job_batches_rsp_id', $jobId)
             ->where('status', 'Hired')
@@ -2111,7 +2110,11 @@ class ScheduleService
 
         $submissions = Submission::where('job_batches_rsp_id', $jobId)
             ->with('nPersonalInfo')
-            ->where('status', 'qualified')
+            ->where('status', 'Qualified')
+            ->where(function ($query) {
+                $query->where('application_status', '!=', 'Withdrawn')
+                    ->orWhereNull('application_status');
+            })
             ->get();
 
         if ($submissions->isEmpty()) {
@@ -2121,15 +2124,11 @@ class ScheduleService
             ], 404);
         }
 
-        $job = \App\Models\JobBatchesRsp::with('criteria:id,job_batches_rsp_id,Education,Eligibility,Training,Experience')
-            ->find($jobId);
+        $job = \App\Models\JobBatchesRsp::find($jobId);
 
         $position       = $job->Position         ?? '';
         $office         = $job->Office           ?? '';
-        // $education_qs   = $job->criteria->Education   ?? '';
-        // $eligibility_qs = $job->criteria->Eligibility ?? '';
-        // $training_qs    = $job->criteria->Training    ?? '';
-        // $experience_qs  = $job->criteria->Experience  ?? '';
+
 
         $count = 0;
 
@@ -2202,7 +2201,7 @@ class ScheduleService
 
             try {
                 Mail::to($email)->queue((new EmailApi(
-                    "Application - Unqualified",
+                    "Thank You for Your Application",
                     'mail-template.applicant-not-chosen',
                     [
                         'fullname'  => $fullname,
@@ -2212,21 +2211,6 @@ class ScheduleService
                         'barangay'  => $barangay,
                         'city'      => $city,
                         'province'  => $province,
-                        'position'  => $position,
-                        'office'    => $office,
-
-
-
-                        // 'education_remark'   => $submission->education_remark   ?? '',
-                        // 'experience_remark'  => $submission->experience_remark  ?? '',
-                        // 'training_remark'    => $submission->training_remark    ?? '',
-                        // 'eligibility_remark' => $submission->eligibility_remark ?? '',
-
-                        // 'education_qs'   => $education_qs,
-                        // 'eligibility_qs' => $eligibility_qs,
-                        // 'training_qs'    => $training_qs,
-                        // 'experience_qs'  => $experience_qs,
-
                         'date' => now()->format('F d, Y'),
                     ]
                 ))->onQueue('emails'));
@@ -2242,7 +2226,7 @@ class ScheduleService
 
                 EmailLog::create([
                     'email'    => $email,
-                    'activity' => 'Unqualified',
+                    'activity' => 'Send email for not chosen',
                 ]);
 
                 $user = Auth::user();
@@ -2262,10 +2246,6 @@ class ScheduleService
                             'date'               => now()->format('F d, Y'),
                             'ip'                 => $request->ip(),
                             'user_agent'         => $request->header('User-Agent'),
-                            // 'education_remark'   => $submission->education_remark   ?? 'N/A',
-                            // 'experience_remark'  => $submission->experience_remark  ?? 'N/A',
-                            // 'training_remark'    => $submission->training_remark    ?? 'N/A',
-                            // 'eligibility_remark' => $submission->eligibility_remark ?? 'N/A',
                         ])
                         ->log("{$user->name} sent an  not chosen notification to {$fullname} for the {$position} position in {$office}.");
                 }
@@ -2290,15 +2270,16 @@ class ScheduleService
         $normalized = $this->normalizePhoneNumber($contactNumber);
 
         if (!$normalized) {
-
             return;
         }
 
         $smsMessage = "Dear {$fullname},\n\n"
-            . "We regret to inform you that your application did not meet the qualification standards.\n\n"
+            . "Thank you for applying with the City Government of Tagum. "
+            . "After careful evaluation, you were not selected for appointment at this time.\n\n"
             . "Position : {$position}\n"
             . "Office   : {$office}\n\n"
-            . "Please check your email for the full details.\n\n"
+            . "We appreciate your effort and encourage you to apply for future opportunities. "
+            . "Please check your email for full details.\n\n"
             . "Thank you!";
 
         SendApplicantSms::dispatch($normalized, $smsMessage)

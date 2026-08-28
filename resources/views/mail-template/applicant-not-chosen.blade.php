@@ -4,8 +4,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Notice of Application Status</title>
-
     <style>
         body {
             font-family: Arial, Helvetica, sans-serif;
@@ -15,55 +13,16 @@
             color: #333;
         }
 
-        /* Bond Paper Style Container */
         .container {
-            max-width: 1500px;
-            /* Wider like bond paper */
+            max-width: 800px;
             background: #ffffff;
             margin: 0 auto;
             border: 1px solid #dcdcdc;
-            /* Light paper border */
-            padding: 50px;
-            /* More spacing like a printed document */
+            padding: 60px;
             box-shadow: 0px 0px 12px rgba(0, 0, 0, 0.07);
         }
 
-        .header {
-            background-color: #1d8d07;
-            color: #fff;
-            text-align: center;
-            padding: 25px;
-            border-radius: 5px;
-            margin-bottom: 40px;
-        }
-
-        .content p,
-        .content li {
-            font-size: 16px;
-            line-height: 1.7;
-            color: #333;
-        }
-
-        h3 {
-            margin-top: 30px;
-            margin-bottom: 10px;
-            color: #1d8d07;
-        }
-
-        ul {
-            padding-left: 20px;
-        }
-
-        .footer {
-            text-align: center;
-            margin-top: 50px;
-            padding: 15px;
-            background: #f1f1f1;
-            font-size: 13px;
-            color: #666;
-            border-radius: 5px;
-        }
-         .letterhead {
+        .letterhead {
             text-align: center;
             margin-bottom: 30px;
         }
@@ -90,75 +49,153 @@
             font-weight: bold;
             text-transform: uppercase;
         }
-        .header-image{
 
-            width: 100%;
-            height: 140px;
-        }
         .date {
             font-size: 11pt;
             margin: 30px 0 20px 0;
+        }
+
+        .recipient {
+            font-size: 11pt;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .recipient strong {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .content p {
+            font-size: 11pt;
+            line-height: 1.7;
+            text-align: justify;
+            margin: 15px 0;
+        }
+
+        .qualification-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 10pt;
+        }
+
+        .qualification-table th,
+        .qualification-table td {
+            border: 1px solid #333;
+            padding: 10px;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        .qualification-table th {
+            background-color: #f5f5f5;
+            font-weight: bold;
+        }
+
+        .signature-section {
+            margin-top: 50px;
+            font-size: 11pt;
+        }
+
+        .signature-name {
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-top: 50px;
+        }
+
+        .signature-title {
+            font-style: italic;
+        }
+
+        .signature-auth {
+            font-size: 10pt;
+        }
+
+        .signatureImage {
+            max-width: 300px;
+            height: auto;
+            display: block;
+        }
+
+        .header-image {
+            width: 100%;
+            height: 110px;
         }
     </style>
 </head>
 
 <body>
     <div class="container">
-    <!-- Letterhead -->
-        <div>
+        <!-- Letterhead -->
+        <div class="header">
 
-            <img src="https://placehold.co/1500x140/1d8d07/ffffff?text=LGU+Letterhead" alt="Logo" class="header-image">
-
+            <img src="{{ $message->embed(public_path('images/header2.jpg')) }}" alt="Logo" class="header-image">
         </div>
 
-         <!-- Date -->
+        <!-- Date -->
         <div class="date">
-            August 26, 2026
+            {{ $date }}
+        </div>
+        <!-- Recipient -->
+        <div class="recipient">
+            <p>
+                <strong>Dear {{ $fullname }}</strong>
+                {{ ucfirst(strtolower($Rpurok)) }}
+                {{ ucwords(strtolower($street)) }}
+                {{ ucwords(strtolower($barangay)) }}<br>
+                {{ ucwords(strtolower($city)) }}
+                {{ ucwords(strtolower($province)) }}
+            </p>
         </div>
 
+        <div class="recipient">
+            Dear {{ $fullname }},
+        </div>
 
+        <!-- Content -->
         <div class="content">
-            <p>Dear <strong>Juan Dela Cruz</strong>,</p>
-            <p>Greetings of Peace and Safety!</p>
-
             <p>
-               Thank you for your interest in the position of <strong>Administrative Aide VI,</strong> Item No.<strong>OSCA-ADAD6-25-2024</strong>
-            under the <strong>Office of the Senior Citizens Affairs,</strong> and for the time and effort you invested in your application.
+               This pertains to your application with the City Government of Tagum. We sincerely appreciate your interest in joining the City Government and the time and effort you have invested throughout the recruitment and selection process.
             </p>
 
             <p>
-                After careful review and evaluation by our Human Resource Merit Promotion and
-                Selection Board, we regret to inform you that your application was not shortlisted
-                for further processing for this position. This decision was made after
-                comparing your qualifications against those of other applicants and the
-                requirements of the position, and does not necessarily reflect your overall
-                competence or potential.
+              After careful evaluation and consideration of all qualified applicants, we would like to inform you that you were not selected for appointment to the position/s you applied at this time. Please be assured that this decision does not diminish our appreciation of your qualifications, experience, and the effort you have demonstrated throughout the process.
             </p>
-
             <p>
-                We encourage you to continue monitoring our official channels for future job
-                openings that may better match your qualifications, and to apply again when a
-                suitable opportunity arises.
+We encourage you to continue exploring future opportunities with the City Government of Tagum and to apply for positions that match your qualifications and experience.            </p>
+            <p>
+            Thank you for your interest, and willingness to join the City Government of Tagum. We truly appreciate your participation in the selection process and wish you success in your future endeavors.
             </p>
-
-            <p>Should you have any questions regarding this notice, please feel free to contact
-                our office.</p>
-            <p>Thank you for your interest in a career with our organization, and we wish you
-                success in your future endeavors.</p>
-
+         
         </div>
 
-              <!-- Signature -->
+        <!-- Signature -->
         <div class="signature-section">
-            <p><strong>JANYLENE A. PALERMO</strong><br>
-            CITY GOVERNMENT DEPARTMENT HEAD I <br>(CITY HUMAN 
-                RESOURCE MANAGEMENT OFFICER)</p>
-            <!-- <p>City Human Resource Management Officer</p> -->
-            <!-- <p>Chairperson</p> -->
+            <p><strong>(SGD.) EDGARD C. DE GUZMAN</strong><br>
+                City Administrator<br>
+                Authorized Representative of the City Mayor<br>
+                Chairperson
+            </p>
+
+
         </div>
+        <!-- Footer -->
 
-
+        <div style="
+                margin-top: 60px;
+                padding-top: 12px;
+                border-top: 1px solid #dcdcdc;
+                text-align: center;
+                font-size: 8.5pt;
+                color: #999;
+                font-style: italic;
+                letter-spacing: 0.3px;
+            ">
+            This document is system generated. Please do not reply to this message.
+        </div>
     </div>
+
 </body>
 
 </html>

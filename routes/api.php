@@ -279,6 +279,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
         Route::get('/application/data/{jobPostId}/{nPersonalId}', [ApplicationController::class, 'getDataApplicantJobpostApplied'])->withoutMiddleware(['auth:sanctum']);
 
+        Route::get('/list/not-chosen/{jobPostId}/', [ApplicationController::class, 'listOfNotChosen']);
+
     });
 
     Route::prefix('job-batches-rsp')->group(function () {
@@ -329,6 +331,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
         Route::post('status', [EmailController::class, 'applicantUnqualified']); // send an update of status applicant
         Route::post('status/qualified', [EmailController::class, 'applicantQualified']); // send an update of status applicant
+        Route::post('/not-chosen', [EmailController::class, 'applicantNotChosen']);
 
     });
 

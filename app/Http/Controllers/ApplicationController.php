@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\excel\nPersonal_info;
+use App\Models\JobBatchesRsp;
 use App\Models\Submission;
 use App\Traits\ApiResponseTrait;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
@@ -109,16 +111,17 @@ class ApplicationController extends Controller
         ], 200, [], JSON_UNESCAPED_SLASHES);
     }
 
-    public function getDataApplicantJobpostApplied(?int $jobPostId = null, ?int $nPersonalId = null){
+    public function getDataApplicantJobpostApplied(?int $jobPostId = null, ?int $nPersonalId = null)
+    {
 
-        $findData = Submission::where('job_batches_rsp_id',$jobPostId)->where('nPersonalInfo_id',$nPersonalId)->first();
+        $findData = Submission::where('job_batches_rsp_id', $jobPostId)->where('nPersonalInfo_id', $nPersonalId)->first();
 
 
-         if (!$findData) {
+        if (!$findData) {
             return $this->errorMessage('applicant not found', 404);
         }
 
-       $personalId = nPersonal_info::with([
+        $personalId = nPersonal_info::with([
             'family',
             'children',
             'education',
@@ -131,7 +134,7 @@ class ApplicationController extends Controller
         ])
             ->find($findData->nPersonalInfo_id);
 
-      if (!$personalId) {
+        if (!$personalId) {
             return $this->errorMessage('applicant data not found', 404);
         }
 
@@ -169,5 +172,115 @@ class ApplicationController extends Controller
             'message' => 'success',
             'data'    => $personalId,
         ], 200, [], JSON_UNESCAPED_SLASHES);
+    }
+
+    public function listOfNotChosen($jobPostId)
+    {
+
+       // throw error if there is no hire on the job post before proceed
+        $jobHired = Submission::where('job_batches_rsp_id', $jobPostId)
+            ->where('status', 'Hired')
+            ->exists();
+
+        if (!$jobHired) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No hired applicant found for this job post. Please hire an applicant first before sending emails to those not chosen.'
+            ], 422);
+        }
+
+        $job = JobBatchesRsp::where('id', $jobPostId)
+            ->select('id', 'Position', 'ItemNo', 'SalaryGrade', 'Office')
+            ->with([
+                'submissions' => function ($query) {
+                    $query->select(
+                        'id',
+                        'job_batches_rsp_id',
+                        'nPersonalInfo_id',
+                        'ControlNo',
+                        'status',
+                    )
+                        ->where('status', 'Qualified')
+                        ->where(function ($query) {
+                            $query->where('application_status', '!=', 'Withdrawn')
+                                ->orWhereNull('application_status');
+                        })
+                        ->with([
+                            'nPersonalInfo:id,firstname,lastname,residential_street,residential_barangay,residential_city,residential_province,Rpurok',
+                        ]);
+                }
+            ])
+            ->first();
+
+        if (!$job) {
+            return response()->json(['message' => 'Job post not found.'], 404);
+        }
+
+        $applicants = [];
+
+        foreach ($job->submissions as $submission) {
+
+            // EXTERNAL
+            if ($submission->nPersonalInfo_id) {
+                $applicants[] = [
+                    'jobPostId'        => $job->id,
+                    'submissionId'     => $submission->id,
+                    'firstname'        => $submission->nPersonalInfo->firstname ?? null,
+                    'lastname'         => $submission->nPersonalInfo->lastname ?? null,
+                    'status'           => $submission->status,
+                    'applicant_status' => 'EXTERNAL',
+                    'purok'            => $submission->nPersonalInfo->Rpurok ?? null,
+                    'street'           => $submission->nPersonalInfo->residential_street ?? null,
+                    'barangay'         => $submission->nPersonalInfo->residential_barangay ?? null,
+                    'city'             => $submission->nPersonalInfo->residential_city ?? null,
+                    'province'         => $submission->nPersonalInfo->residential_province ?? null,
+                ];
+            }
+
+            // INTERNAL
+            elseif (!empty($submission->ControlNo)) {
+                $personal = DB::table('xPersonalAddt')
+                    ->join('xPersonal', 'xPersonalAddt.ControlNo', '=', 'xPersonal.ControlNo')
+                    ->where('xPersonalAddt.ControlNo', $submission->ControlNo)
+                    ->select(
+                        'xPersonal.Firstname',
+                        'xPersonal.Surname',
+                        'xPersonalAddt.EmailAdd',
+                        'xPersonalAddt.Rpurok',
+                        'xPersonalAddt.Rstreet',
+                        'xPersonalAddt.Rbarangay',
+                        'xPersonalAddt.Rcity',
+                        'xPersonalAddt.Rprovince',
+                    )
+                    ->first();
+
+                if (!$personal) {
+                    continue;
+                }
+
+                $applicants[] = [
+                    'jobPostId'        => $job->id,
+                    'submissionId'     => $submission->id,
+                    'controlno'        => $submission->ControlNo,
+                    'firstname'        => $personal->Firstname,
+                    'lastname'         => $personal->Surname,
+                    'status'           => $submission->status,
+                    'applicant_status' => 'INTERNAL',
+                    'purok'            => $personal->Rpurok,
+                    'street'           => $personal->Rstreet,
+                    'barangay'         => $personal->Rbarangay,
+                    'city'             => $personal->Rcity,
+                    'province'         => $personal->Rprovince,
+                    'email'            => $personal->EmailAdd,
+                ];
+            }
+        }
+
+        //  Fixed: empty() — return message only when list is truly empty
+        if (empty($applicants)) {
+            return $this->infoMessage('There are no  applicants', 200);
+        }
+
+        return $this->successMessage($applicants, 'Successfully Fetched', 200);
     }
 }

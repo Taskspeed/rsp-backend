@@ -602,49 +602,6 @@ class ApplicantHiringService
         $pageNo = $jobPost->PageNo;
 
 
-        // $activeService = DB::table('xService')
-        //     ->where('ControlNo', $controlNo)
-        //     ->orderBy('ToDate', 'DESC')
-        //     ->orderBy('FromDate', 'DESC')
-        //     ->first();
-
-        // if ($activeService) {
-
-        //     // Regular / Casual — dapat magkaroon ng SepDate at SepCause = 'Re-appointment'
-        //     if (in_array($activeService->Status, ['REGULAR', 'CASUAL'])) {
-
-        //         if (!empty($activeService->SepDate)) {
-        //             // May laman na ang SepDate — mag-duplicate ng row bago i-set ang bago
-        //             $newRow = (array) $activeService;
-        //             unset($newRow['PMID']);
-
-        //             $newRow['SepDate']  = Carbon::parse($fromDate)->subDay()->format('m/d/Y');
-        //             $newRow['SepCause'] = 'REAPPOINTMENT';
-        //             $newRow['FromDate'] = Carbon::parse($fromDate)->subDay()->format('Y-m-d H:i:s');
-        //             $newRow['ToDate']   = Carbon::parse($fromDate)->subDay()->format('Y-m-d H:i:s');
-
-        //             DB::table('xService')->insert($newRow);
-        //         } else {
-        //             // Wala pang laman — direkta na lang i-update
-        //             DB::table('xService')
-        //                 ->where('PMID', $activeService->PMID)
-        //                 ->update([
-        //                     'SepDate'  => Carbon::parse($fromDate)->subDay()->format('m/d/Y'),
-        //                     'SepCause' => 'REAPPOINTMENT',
-        //                 ]);
-        //         }
-
-        //         // JobOrder / Honorarium / Contractual — walang SepDate/SepCause, pero renew = 'ORIGINAL'
-        //     } elseif (in_array($activeService->Status, ['JOB ORDER', 'JO', 'CONTRACTUAL', 'HONORARIUM'])) {
-
-        //         DB::table('xService')
-        //             ->where('PMID', $activeService->PMID)
-        //             ->update([
-        //                 'renew' => 'ORIGINAL',
-        //             ]);
-        //     }
-        // }
-
         $activeService = DB::table('xService')
             ->where('ControlNo', $controlNo)
             ->orderBy('ToDate', 'DESC')
@@ -701,6 +658,7 @@ class ApplicantHiringService
                         ->update([
                             'renew'    => 'ORIGINAL',
                             'SepCause' => 'APPOINTED (ORIGINAL)',
+                            'SepDate'  => Carbon::parse($fromDate)->format('m/d/Y'),
                         ]);
                 }
             }

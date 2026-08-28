@@ -2124,12 +2124,6 @@ class ScheduleService
             ], 404);
         }
 
-        $job = \App\Models\JobBatchesRsp::find($jobId);
-
-        $position       = $job->Position         ?? '';
-        $office         = $job->Office           ?? '';
-
-
         $count = 0;
 
         foreach ($submissions as $submission) {
@@ -2201,7 +2195,7 @@ class ScheduleService
 
             try {
                 Mail::to($email)->queue((new EmailApi(
-                    "Thank You for Your Application",
+                    "April 27, 2026 Publication Result", // TODO need to change
                     'mail-template.applicant-not-chosen',
                     [
                         'fullname'  => $fullname,
@@ -2219,9 +2213,7 @@ class ScheduleService
 
                 $this->dispatchSmsNotChosen(
                     contactNumber: $contactNumber,
-                    fullname: $fullname,
-                    position: $position,
-                    office: $office,
+                    fullname: $fullname
                 );
 
                 EmailLog::create([
@@ -2241,13 +2233,11 @@ class ScheduleService
                             'applicant_type'     => $isExternal ? 'EXTERNAL' : 'INTERNAL', // ✅
                             'email'              => $email,
                             'job_post_id'        => $jobId,
-                            'position'           => $position,
-                            'office'             => $office,
                             'date'               => now()->format('F d, Y'),
                             'ip'                 => $request->ip(),
                             'user_agent'         => $request->header('User-Agent'),
                         ])
-                        ->log("{$user->name} sent an  not chosen notification to {$fullname} for the {$position} position in {$office}.");
+                        ->log("{$user->name} sent an  not chosen notification to {$fullname}");
                 }
 
                 $count++;
@@ -2264,8 +2254,6 @@ class ScheduleService
     private function dispatchSmsNotChosen(
         ?string $contactNumber,
         string  $fullname,
-        string  $position,
-        string  $office,
     ): void {
         $normalized = $this->normalizePhoneNumber($contactNumber);
 
@@ -2276,8 +2264,6 @@ class ScheduleService
         $smsMessage = "Dear {$fullname},\n\n"
             . "Thank you for applying with the City Government of Tagum. "
             . "After careful evaluation, you were not selected for appointment at this time.\n\n"
-            . "Position : {$position}\n"
-            . "Office   : {$office}\n\n"
             . "We appreciate your effort and encourage you to apply for future opportunities. "
             . "Please check your email for full details.\n\n"
             . "Thank you!";

@@ -679,15 +679,30 @@ class ApplicantHiringService
                             'SepCause' => $sepCause,
                         ]);
                 }
-
-            // JobOrder / Honorarium / Contractual — walang SepDate/SepCause, pero renew = 'ORIGINAL'
+                    // JobOrder / Honorarium / Contractual — check muna kung may laman na ang SepDate
             } elseif (in_array($activeService->Status, ['JOB ORDER', 'JO', 'CONTRACTUAL', 'HONORARIUM'])) {
 
-                DB::table('xService')
-                    ->where('PMID', $activeService->PMID)
-                    ->update([
-                        'renew' => 'ORIGINAL',
-                    ]);
+                if (!empty($activeService->SepDate)) {
+                    // May laman na ang SepDate — mag-duplicate ng row bago i-set ang bago
+                    $newRow = (array) $activeService;
+                    unset($newRow['PMID']);
+
+                    $newRow['SepDate']  = Carbon::parse($fromDate)->format('m/d/Y');
+                    $newRow['SepCause'] = 'APPOINTED (ORIGINAL)';
+                    $newRow['renew']    = 'ORIGINAL';
+                    $newRow['FromDate'] = Carbon::parse($fromDate)->subDay()->format('Y-m-d H:i:s');
+                    $newRow['ToDate']   = Carbon::parse($fromDate)->subDay()->format('Y-m-d H:i:s');
+
+                    DB::table('xService')->insert($newRow);
+                } else {
+                    // Wala pang laman — direkta na lang i-update
+                    DB::table('xService')
+                        ->where('PMID', $activeService->PMID)
+                        ->update([
+                            'renew'    => 'ORIGINAL',
+                            'SepCause' => 'APPOINTED (ORIGINAL)',
+                        ]);
+                }
             }
         }
 

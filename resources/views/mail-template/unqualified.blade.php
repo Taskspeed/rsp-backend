@@ -130,7 +130,7 @@
         <!-- Letterhead -->
         <div class="header">
 
-            <img src="{{ $message->embed(public_path('images/header2.jpg')) }}" alt="Logo" class="header-image">
+            <img src="{{ $message->embed(public_path('images/emailHeader.png')) }}" alt="Logo" class="header-image">
         </div>
 
         <!-- Date -->

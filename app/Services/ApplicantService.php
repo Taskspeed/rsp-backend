@@ -522,7 +522,7 @@ class ApplicantService
             ->where('job_batches_rsp_id', $jobpostId)->get();
 
         $totalAssigned = Job_batches_user::where('job_batches_rsp_id', $jobpostId)
-            ->whereHas('user', fn($q) => $q->where('active', 1))
+            ->whereHas('user')
             ->count();
 
         $totalCompleted = Job_batches_user::where('job_batches_rsp_id', $jobpostId)

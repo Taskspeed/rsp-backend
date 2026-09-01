@@ -2126,6 +2126,18 @@ class ScheduleService
 
         $count = 0;
 
+          $job = \App\Models\JobBatchesRsp::find($jobId);
+
+          $aberration  = DB::table('yOffice')->where('Descriptions',$job->Office)->first();
+
+          $abbr  = $aberration->Abbr ?? '';
+
+          $position       = $job->Position         ?? '';
+
+      $publication_date = $job->post_date
+        ? strtoupper(Carbon::parse($job->post_date)->format('F d, Y'))
+        : null;
+
         foreach ($submissions as $submission) {
 
             // =====================
@@ -2195,7 +2207,7 @@ class ScheduleService
 
             try {
                 Mail::to($email)->queue((new EmailApi(
-                    "April 27, 2026 Publication Result", // TODO need to change
+                    "$publication_date PUBLICATION RESULT - $position ($abbr)", // TODO need to change
                     'mail-template.applicant-not-chosen',
                     [
                         'fullname'  => $fullname,
@@ -2213,7 +2225,9 @@ class ScheduleService
 
                 $this->dispatchSmsNotChosen(
                     contactNumber: $contactNumber,
-                    fullname: $fullname
+                    fullname: $fullname,
+                    position: $position,
+                    abbr: $abbr
                 );
 
                 EmailLog::create([
@@ -2254,6 +2268,8 @@ class ScheduleService
     private function dispatchSmsNotChosen(
         ?string $contactNumber,
         string  $fullname,
+        string  $position,
+        string  $abbr
     ): void {
         $normalized = $this->normalizePhoneNumber($contactNumber);
 
@@ -2264,6 +2280,8 @@ class ScheduleService
         $smsMessage = "Dear {$fullname},\n\n"
             . "Thank you for applying with the City Government of Tagum. "
             . "After careful evaluation, you were not selected for appointment at this time.\n\n"
+            . "POSITION: {$position}\n"
+            . "OFFICE: {$abbr}\n\n"
             . "We appreciate your effort and encourage you to apply for future opportunities. "
             . "Please check your email for full details.\n\n"
             . "Thank you!";

@@ -1011,9 +1011,9 @@ class ApplicantHiringService
                 ->where('submission_id',  $rollback->submission_id)
                 ->delete();
 
-            DB::table('xNonAcademic')->where('ControlNo',  $rollback->controlNo)
-                ->where('submission_id',  $rollback->submission_id)
-                ->delete();
+            // DB::table('xNonAcademic')->where('ControlNo',  $rollback->controlNo)
+            //     ->where('submission_id',  $rollback->submission_id)
+            //     ->delete();
 
 
             DB::table('posting_date')->where('ControlNo',  $rollback->controlNo)
@@ -1039,6 +1039,11 @@ class ApplicantHiringService
                 ->where('submission_id', $submissionId)
                 ->delete();
 
+                      // Delete rollback record (one-time use)
+            DB::table('xReference')
+                ->where('submission_id', $submissionId)
+                ->delete();
+
 
             // Delete rollback record (one-time use)
             DB::table('hire_rollbacks')
@@ -1048,6 +1053,7 @@ class ApplicantHiringService
             DB::table('tempRegAppointmentReorgExt')
                 ->where('submission_id', $submissionId)
                 ->delete();
+
 
 
             // Activity log

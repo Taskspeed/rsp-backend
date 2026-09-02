@@ -177,17 +177,17 @@ class ApplicationController extends Controller
     public function listOfNotChosen($jobPostId)
     {
 
-       // throw error if there is no hire on the job post before proceed
-        $jobHired = Submission::where('job_batches_rsp_id', $jobPostId)
-            ->where('status', 'Hired')
-            ->exists();
+    //    // throw error if there is no hire on the job post before proceed
+    //     $jobHired = Submission::where('job_batches_rsp_id', $jobPostId)
+    //         ->where('status', 'Hired')
+    //         ->exists();
 
-        if (!$jobHired) {
-            return response()->json([
-                'success' => false,
-                'message' => 'No hired applicant found for this job post. Please hire an applicant first before sending emails to those not chosen.'
-            ], 422);
-        }
+    //     if (!$jobHired) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'No hired applicant found for this job post. Please hire an applicant first before sending emails to those not chosen.'
+    //         ], 422);
+    //     }
 
         $job = JobBatchesRsp::where('id', $jobPostId)
             ->select('id', 'Position', 'ItemNo', 'SalaryGrade', 'Office')

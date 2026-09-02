@@ -2096,17 +2096,17 @@ class ScheduleService
     {
         $jobId = $validated['job_batches_rsp_id'];
 
-        // throw error if there is no hire on the job post before proceed
-        $jobHired = Submission::where('job_batches_rsp_id', $jobId)
-            ->where('status', 'Hired')
-            ->exists();
+        // // throw error if there is no hire on the job post before proceed
+        // $jobHired = Submission::where('job_batches_rsp_id', $jobId)
+        //     ->where('status', 'Hired')
+        //     ->exists();
 
-        if (!$jobHired) {
-            return response()->json([
-                'success' => false,
-                'message' => 'No hired applicant found for this job post. Please hire an applicant first before sending emails to those not chosen.'
-            ], 422);
-        }
+        // if (!$jobHired) {
+        //     return response()->json([
+        //         'success' => false,
+        //         'message' => 'No hired applicant found for this job post. Please hire an applicant first before sending emails to those not chosen.'
+        //     ], 422);
+        // }
 
         $submissions = Submission::where('job_batches_rsp_id', $jobId)
             ->with('nPersonalInfo')

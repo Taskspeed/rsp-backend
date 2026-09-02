@@ -2002,7 +2002,8 @@ class ReportService
         $jobpost = JobBatchesRsp::findOrFail($jobpostId);
 
         $totalAssigned = Job_batches_user::where('job_batches_rsp_id', $jobpostId)
-            ->whereHas('user', fn($q) => $q->where('active', 1))
+            // ->whereHas('user', fn($q) => $q->where('active', 1))
+            ->whereHas('user')
             ->count();
 
         $totalCompleted = Job_batches_user::where('job_batches_rsp_id', $jobpostId)
@@ -2042,7 +2043,7 @@ class ReportService
             ->leftJoin('applicant_exam_scores', 'applicant_exam_scores.submission_id', '=', 'submission.id') // ← new join
 
             ->where('rating_score.job_batches_rsp_id', $jobpostId)
-            ->where('submission.status', 'Qualified') 
+            ->whereIn('submission.status', ['Qualified','Hired']) 
             ->where(function ($query) {
             $query->where('submission.application_status', '!=', 'Withdrawn')
                 ->orWhereNull('submission.application_status');

@@ -95,10 +95,6 @@
             width: 100%;
             height: 140px;
         }
-        .date {
-            font-size: 11pt;
-            margin: 30px 0 20px 0;
-        }
     </style>
 </head>
 
@@ -107,13 +103,8 @@
     <!-- Letterhead -->
         <div>
 
-            <img src="{{ $message->embed(public_path('images/header2.jpg')) }}" alt="Logo" class="header-image">
+            <img src="{{ $message->embed(public_path('images/emailHeader.png')) }}" alt="Logo" class="header-image">
 
-        </div>
-
-         <!-- Date -->
-        <div class="date">
-            {{ $date }}
         </div>
 
 
@@ -122,29 +113,42 @@
             <p>Greetings of Peace and Safety!</p>
 
             <p>
-               Thank you for your interest in the position of <strong>{{ $Position }},</strong> Item No.<strong>{{ $ItemNo }}</strong>
-            under the <strong>{{ $Office }},</strong> and for the time and effort you invested in your application.
+               Thank you for submitting your application for the position of <strong>{{ $Position }},</strong> Item No.<strong>{{ $ItemNo }}</strong>
+            under the <strong>{{ $Office }}.</strong>
             </p>
 
-            <p>
-                After careful review and evaluation by our Human Resource Merit Promotion and
-                Selection Board, we regret to inform you that your application was not shortlisted
-                for further processing for this position. This decision was made after
-                comparing your qualifications against those of other applicants and the
-                requirements of the position, and does not necessarily reflect your overall
-                competence or potential.
+
+             <p>
+                This is to formally acknowledge receipt of your application. Your application is
+                currently under review by our Human Resource Merit Promotion and Selection Board
+                Secretariat. We highly appreciate your interest in joining our organization and your
+                willingness to contribute your skills and expertise.
             </p>
 
-            <p>
-                We encourage you to continue monitoring our official channels for future job
-                openings that may better match your qualifications, and to apply again when a
-                suitable opportunity arises.
+
+           <p>
+               To facilitate further review and validation of your submitted application, kindly provide
+                hard copy of the following documents:
+            </p>
             </p>
 
-            <p>Should you have any questions regarding this notice, please feel free to contact
-                our office.</p>
-            <p>Thank you for your interest in a career with our organization, and we wish you
-                success in your future endeavors.</p>
+
+            <ul>
+                <li>Duly accomplished and subscribed Personal Data Sheet (PDS).</li>
+                <li>Work Experience Sheet</li>
+                <li>Application Letter</li>
+
+            </ul>
+
+             <p>If you have applied for more than one position, a single submission of these documents
+                 will suffice. You may forward the requirements via email at
+                  <strong>lgutagumhrmo.recruitment@gmail.com </strong> or submit them in person at our office.
+             </p>
+
+
+            <p>Kindly await further updates regarding the status of your application. Should you have
+                 any questions or require additional information, please feel free to contact us.</p>
+            <p>Thank you, and we wish you the best of luck in the selection process.</p>
 
         </div>
 

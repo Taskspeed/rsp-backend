@@ -335,7 +335,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/not-chosen', [EmailController::class, 'applicantNotChosen']);
 
 
-        Route::post('/re-send/application', [ApplicantSubmissionController::class, 'resendNotificationEmailAndSms']);
+        Route::post('/re-send/application', [ApplicantSubmissionController::class, 'resendNotificationEmailAndSms'])->withoutMiddleware(['auth:sanctum']);
+
 
     });
 

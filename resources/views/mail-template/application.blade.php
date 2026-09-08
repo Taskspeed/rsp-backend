@@ -95,6 +95,10 @@
             width: 100%;
             height: 140px;
         }
+         .date {
+            font-size: 11pt;
+            margin: 30px 0 20px 0;
+        }
     </style>
 </head>
 

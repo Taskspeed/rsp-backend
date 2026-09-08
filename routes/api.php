@@ -36,6 +36,7 @@ use Illuminate\Support\Facades\Route;
 
 
 
+
 Route::get('employee/list', [AppointmentController::class, 'employee']); // employe list
 
 Route::get('/applicant/pds-image/{filename}', [JobBatchesRspController::class, 'proxyPdsImage']);
@@ -332,6 +333,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('status', [EmailController::class, 'applicantUnqualified']); // send an update of status applicant
         Route::post('status/qualified', [EmailController::class, 'applicantQualified']); // send an update of status applicant
         Route::post('/not-chosen', [EmailController::class, 'applicantNotChosen']);
+
+
+        Route::post('/re-send/application', [ApplicantSubmissionController::class, 'resendNotificationEmailAndSms']);
 
     });
 

@@ -172,7 +172,7 @@ class ApplicationService
             }
 
             OtherDocument::where('nPersonalInfo_id', $personal->id)->delete();
-            
+
             $oldPds = Pds::where('nPersonalInfo_id', $personal->id)->get();
 
             foreach ($oldPds as $record) {
@@ -315,6 +315,7 @@ class ApplicationService
             return null;
         }
     }
+
     private function sendApplicantEmail($applicant, $jobId, $isUpdate)
     {
         $job = \App\Models\JobBatchesRsp::findOrFail($jobId);
@@ -369,7 +370,7 @@ class ApplicationService
 
         $smsMessage = $isUpdate
             ? "Dear {$fullName},\n\n"
-            . "Your application has been received successfully.\n\n"
+            . "Your application has been received updated.\n\n"
             . "Position: {$job->Position}\n"
             . "Item No: {$job->ItemNo}\n"
             . "Office: {$job->Office}\n\n"
@@ -411,5 +412,66 @@ class ApplicationService
 
 
         return null;
+    }
+
+    public function resendApplicationEmailReceived(array $params): array
+    {
+        $submissions = DB::table('submission as s')
+            ->leftJoin('nPersonalInfo as np', 'np.id', '=', 's.nPersonalInfo_id')
+            ->leftJoin('xPersonalAddt as x', function ($join) {
+                $join->on(DB::raw('LTRIM(RTRIM(x.ControlNo))'), '=', DB::raw('LTRIM(RTRIM(s.ControlNo))'));
+            })
+            ->leftJoin('xPersonal as xp', function ($join) {
+                $join->on(DB::raw('LTRIM(RTRIM(xp.ControlNo))'), '=', DB::raw('LTRIM(RTRIM(s.ControlNo))'));
+            })
+            ->select(
+                's.id as submission_id',
+                's.nPersonalInfo_id',
+                's.ControlNo',
+                's.job_batches_rsp_id',
+                DB::raw('COALESCE(np.firstname, xp.Firstname) as firstname'),
+                DB::raw('COALESCE(np.lastname, xp.Surname) as lastname'),
+                DB::raw('COALESCE(np.email_address, x.EmailAdd) as email_address'),
+                DB::raw('COALESCE(np.cellphone_number, x.CellphoneNo) as cellphone_number'),
+                's.status',
+                's.submitted',
+                's.created_at'
+            )
+            ->whereBetween('s.created_at', [$params['date_from'], $params['date_to']])
+            ->whereNotNull('s.job_batches_rsp_id')
+            ->orderByDesc('s.created_at')
+            ->get();
+
+        $sent = 0;
+        $skipped = 0;
+
+        foreach ($submissions as $applicant) {
+            if (empty($applicant->email_address)) {
+                $skipped++;
+                continue;
+            }
+
+            try {
+                $this->sendApplicantEmail($applicant, $applicant->job_batches_rsp_id, false);
+                $this->sendApplicantSms($applicant, $applicant->job_batches_rsp_id, false);
+                $sent++;
+            } catch (\Throwable $e) {
+                $skipped++;
+                \Illuminate\Support\Facades\Log::warning('Failed to send batch notification', [
+                    'submission_id' => $applicant->submission_id,
+                    'job_batches_rsp_id' => $applicant->job_batches_rsp_id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        return [
+            'data' => [
+                'total_found' => $submissions->count(),
+                'sent' => $sent,
+                'skipped_no_email' => $skipped,
+            ],
+            'message' => 'Batch notifications queued.',
+        ];
     }
 }

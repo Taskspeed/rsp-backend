@@ -379,5 +379,23 @@ class ApplicantSubmissionController extends Controller
         return $this->successMessage($result['data'], $result['message'], 200);
     }
 
+
+     //
+    public function resendNotificationEmailAndSms(Request $request)
+    {
+        $validated = $request->validate([
+             'date_from' => 'required|date_format:Y-m-d H:i:s',
+            'date_to' => 'required|date_format:Y-m-d H:i:s|after_or_equal:date_from',
+        ]);
+
+        $result = $this->applicationService->resendApplicationEmailReceived($validated);
+
+        if ($result instanceof \Illuminate\Http\JsonResponse) {
+            return $result;
+        }
+
+        return $this->successMessage($result['data'], $result['message'], 200);
+    }
+
    
 }

@@ -22,8 +22,8 @@ class DashboardService
         SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending,
         SUM(CASE WHEN status = 'unqualified' THEN 1 ELSE 0 END) as unqualified
     ")
-            ->when($postDate, function ($q) use ($postDate) {
-                $q->whereHas('jobPost', fn($j) => $j->where('post_date', $postDate));
+            ->when($postDate && $endDate, function ($q) use ($postDate, $endDate) {
+                $q->whereHas('jobPost', fn($j) => $j->whereBetween('post_date', [$postDate, $endDate]));
             })
             ->first();
         // ✅ Internal = has ControlNo, External = only has nPersonalInfo_id (no ControlNo)
@@ -31,8 +31,8 @@ class DashboardService
             SUM(CASE WHEN ControlNo IS NOT NULL THEN 1 ELSE 0 END) as [internal],
             SUM(CASE WHEN ControlNo IS NULL AND nPersonalInfo_id IS NOT NULL THEN 1 ELSE 0 END) as [external]
         ")
-            ->when($postDate, function ($q) use ($postDate) {
-                $q->whereHas('jobPost', fn($j) => $j->where('post_date', $postDate));
+            ->when($postDate && $endDate, function ($q) use ($postDate, $endDate) {
+                $q->whereHas('jobPost', fn($j) => $j->whereBetween('post_date', [$postDate, $endDate]));
             })
             ->first();
 
@@ -46,17 +46,20 @@ class DashboardService
     ")->first();
 
         // count the number of job base on the parameter send on the post_date
-        $countJobpost = JobBatchesRsp::where('post_date', $postDate)->count();
+        $countJobpost = JobBatchesRsp::when($postDate && $endDate, function ($q) use ($postDate, $endDate) {
+            $q->whereBetween('post_date', [$postDate, $endDate]);
+        })
+            ->count();
 
         // get the value of actual data of the applicant - internal - external
-        $applicantList = $this->listOfApplicants();
+        $applicantList = $this->listOfApplicants($postDate, $endDate);
 
         return response()->json([
 
             'publish_jobpost' => [
                 'vacant'    => (int) $countJobpost,
-                'post_date' => $postDate && $endDate 
-                    ? Carbon::parse($postDate)->format('F d, Y') . ' - ' . Carbon::parse($endDate)->format('F d, Y') 
+                'post_date' => $postDate && $endDate
+                    ? Carbon::parse($postDate)->format('F d, Y') . ' - ' . Carbon::parse($endDate)->format('F d, Y')
                     : null,
             ],
             'applicant_application' => [
@@ -68,13 +71,6 @@ class DashboardService
                 'external'        => (int) $applicantType->external,
             ],
 
-            'plantilla_position' => [
-                'funded'          => (int) $plantilla->funded,
-                'unfunded'        => (int) $plantilla->unfunded,
-                'occupied'        => (int) $plantilla->occupied,
-                'unoccupied'      => (int) $plantilla->unoccupied,
-                'total_positions' => (int) $plantilla->total_positions,
-            ],
 
             'applicant_actual_application' => [
                 'internal_actual'           => $applicantList['internal_actual'],
@@ -82,6 +78,13 @@ class DashboardService
                 'total_application_actual'  => $applicantList['total_application_actual'],
             ],
 
+            'plantilla_position' => [
+                'funded'          => (int) $plantilla->funded,
+                'unfunded'        => (int) $plantilla->unfunded,
+                'occupied'        => (int) $plantilla->occupied,
+                'unoccupied'      => (int) $plantilla->unoccupied,
+                'total_positions' => (int) $plantilla->total_positions,
+            ],
 
         ]);
     }
@@ -91,7 +94,7 @@ class DashboardService
     public function getApplicantSummaryByOffice($postDate = null)
     {
         $summary = JobBatchesRsp::select('Office', 'post_date')
-            ->when($postDate, fn($q) => $q->where('post_date', $postDate)) // ✅ only filter if postDate is provided
+            ->when($postDate, fn($q) => $q->where('post_date', $postDate)) // only filter if postDate is provided
             ->withCount([
                 'submissions as total_applicant',
                 'submissions as Pending'     => fn($q) => $q->where('status', 'pending'),
@@ -147,18 +150,19 @@ class DashboardService
 
     // list of applicant applied internal - external
 
-    // ✅ Private helper — returns array, not JSON response
-    private function listOfApplicants()
+    // Private helper — returns array, not JSON response
+    private function listOfApplicants($postDate = null, $endDate = null)
     {
         $external = Submission::query()
             ->join('nPersonalInfo as p', 'submission.nPersonalInfo_id', '=', 'p.id')
+            ->when($postDate && $endDate, function ($q) use ($postDate, $endDate) {
+                $q->whereHas('jobPost', fn($j) => $j->whereBetween('post_date', [$postDate, $endDate]));
+            })
             ->select(
                 DB::raw('MIN(p.id) as nPersonal_id'),
                 'p.firstname',
                 'p.lastname',
-                // DB::raw(" CONVERT(DATE, p.date_of_birth, 103) as date_of_birth"),
-                DB::raw('CAST(p.date_of_birth AS VARCHAR(20)) as date_of_birth'), // varchar → varchar, no conversion
-
+                DB::raw('CAST(p.date_of_birth AS VARCHAR(20)) as date_of_birth'),
                 DB::raw('COUNT(submission.id) as jobpost'),
                 DB::raw("'external' as applicant_type"),
                 DB::raw('NULL as ControlNo')
@@ -168,17 +172,20 @@ class DashboardService
         $internal = Submission::query()
             ->whereNull('submission.nPersonalInfo_id')
             ->join('xPersonal as xp', 'submission.ControlNo', '=', 'xp.ControlNo')
+            ->when($postDate && $endDate, function ($q) use ($postDate, $endDate) {
+                $q->whereHas('jobPost', fn($j) => $j->whereBetween('post_date', [$postDate, $endDate]));
+            })
             ->select(
                 DB::raw('NULL as nPersonal_id'),
                 'xp.Firstname as firstname',
                 'xp.Surname as lastname',
-                // DB::raw('CAST(xp.BirthDate AS DATE) as date_of_birth'),
-                DB::raw('CONVERT(VARCHAR(20), xp.BirthDate, 101) as date_of_birth'), // datetime → varchar MM/dd/yyyy
+                DB::raw('CONVERT(VARCHAR(20), xp.BirthDate, 101) as date_of_birth'),
                 DB::raw('COUNT(submission.id) as jobpost'),
                 DB::raw("'internal' as applicant_type"),
                 'submission.ControlNo'
             )
             ->groupBy('xp.Firstname', 'xp.Surname', 'xp.BirthDate', 'submission.ControlNo');
+
 
         $query = $external->unionAll($internal);
 

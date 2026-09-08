@@ -16,7 +16,7 @@ class DashboardController extends Controller
 
 
     // get the publication of job post
-    private function publicationDate()
+     public function publicationDateList()
     {
         $dates = JobBatchesRsp::select('post_date', 'end_date')
             ->distinct()
@@ -24,57 +24,57 @@ class DashboardController extends Controller
             ->get();
 
         return $dates->map(fn($item) => [
-            'date' => Carbon::parse($item->post_date)->format('M d, Y'),
-            'end_date' => Carbon::parse($item->end_date)->format('M d, Y'),
+            'post_date' => Carbon::parse($item->post_date)->format('F d, Y'),
+            'end_date' => Carbon::parse($item->end_date)->format('F d, Y'),
         ]);
     }
 
-    private function latestPostDate(): array
-    {
-        $dates = $this->publicationDate();
+    // private function latestPostDate(): array
+    // {
+    //     $dates = $this->publicationDate();
 
-        if ($dates->isEmpty()) {
-            return ['post_date' => null, 'end_date' => null];
-        }
+    //     if ($dates->isEmpty()) {
+    //         return ['post_date' => null, 'end_date' => null];
+    //     }
 
-        return [
-            'post_date' => Carbon::createFromFormat('M d, Y', $dates->first()['date'])->format('Y-m-d'),
-            'end_date'  => Carbon::createFromFormat('M d, Y', $dates->first()['end_date'])->format('Y-m-d'),
-        ];
-    }
+    //     return [
+    //         'post_date' => Carbon::createFromFormat('M d, Y', $dates->first()['date'])->format('Y-m-d'),
+    //         'end_date'  => Carbon::createFromFormat('M d, Y', $dates->first()['end_date'])->format('Y-m-d'),
+    //     ];
+    // }
     // total of applicant
     // total of each status of applicant
     public function totalApplicantStatus(DashboardService $dashboardService, Request $request,)
     {
 
-        $postDate = null;
-        $endDate = null;
+        $postDate =  $request->query('post_date');
+        $endDate = $request->query('end_date');
 
-        if ($request->has('postDate')) {
-            try {
-                $postDate = Carbon::createFromFormat('m-d-Y', $request->query('postDate'))->format('Y-m-d');
-            } catch (\Exception $e) {
-                return response()->json([
-                    'message' => 'Invalid date format. Use MM-DD-YYYY. Example: 04-07-2026',
-                ], 422);
-            }
-        }
+        // if ($request->has('postDate')) {
+        //     try {
+        //         $postDate = Carbon::createFromFormat('m-d-Y', $request->query('postDate'))->format('Y-m-d');
+        //     } catch (\Exception $e) {
+        //         return response()->json([
+        //             'message' => 'Invalid date format. Use MM-DD-YYYY. Example: 04-07-2026',
+        //         ], 422);
+        //     }
+        // }
 
-        if ($request->has('endDate')) {
-            try {
-                $endDate = Carbon::createFromFormat('m-d-Y', $request->query('endDate'))->format('Y-m-d');
-            } catch (\Exception $e) {
-                return response()->json([
-                    'message' => 'Invalid end date format. Use MM-DD-YYYY. Example: 04-07-2026',
-                ], 422);
-            }
-        }
-        // Fall back to latest dates if not provided
-        if (!$postDate || !$endDate) {
-            $latest   = $this->latestPostDate();
-            $postDate ??= $latest['post_date'];
-            $endDate  ??= $latest['end_date'];
-        }
+        // if ($request->has('endDate')) {
+        //     try {
+        //         $endDate = Carbon::createFromFormat('m-d-Y', $request->query('endDate'))->format('Y-m-d');
+        //     } catch (\Exception $e) {
+        //         return response()->json([
+        //             'message' => 'Invalid end date format. Use MM-DD-YYYY. Example: 04-07-2026',
+        //         ], 422);
+        //     }
+        // }
+        // // Fall back to latest dates if not provided
+        // if (!$postDate || !$endDate) {
+        //     $latest   = $this->latestPostDate();
+        //     $postDate ??= $latest['post_date'];
+        //     $endDate  ??= $latest['end_date'];
+        // }
 
         $result = $dashboardService->applicantStatus($postDate, $endDate);
         return $result;
@@ -85,19 +85,19 @@ class DashboardController extends Controller
     {
 
         // Validate and convert format if postDate is provided
-        $postDate = $request->query('postDate'); // reads ?postDate=04-07-2026
+        $postDate = $request->query('post_date'); // reads ?postDate=04-07-2026
 
-        if (!is_null($postDate)) {
-            try {
-                $postDate = Carbon::createFromFormat('m-d-Y', $postDate)->format('Y-m-d');
-            } catch (\Exception $e) {
-                return response()->json([
-                    'message' => 'Invalid date format. Use MM-DD-YYYY. Example: 04-07-2026',
-                ], 422);
-            }
-        }
+        // if (!is_null($postDate)) {
+        //     try {
+        //         $postDate = Carbon::createFromFormat('m-d-Y', $postDate)->format('Y-m-d');
+        //     } catch (\Exception $e) {
+        //         return response()->json([
+        //             'message' => 'Invalid date format. Use MM-DD-YYYY. Example: 04-07-2026',
+        //         ], 422);
+        //     }
+        // }
         // lastest
-        $postDate ??= $this->latestPostDate();
+        // $postDate ??= $this->latestPostDate();
 
         $result = $dashboardService->getApplicantSummaryByOffice($postDate);
 
@@ -111,19 +111,18 @@ class DashboardController extends Controller
     {
 
         // Validate and convert format if postDate is provided
-        $postDate = $request->query('postDate'); // reads ?postDate=04-07-2026
+        $postDate = $request->query('post_date'); // reads ?postDate=04-07-2026
 
-        if (!is_null($postDate)) {
-            try {
-                $postDate = Carbon::createFromFormat('m-d-Y', $postDate)->format('Y-m-d');
-            } catch (\Exception $e) {
-                return response()->json([
-                    'message' => 'Invalid date format. Use MM-DD-YYYY. Example: 04-07-2026',
-                ], 422);
-            }
-        }
+        // if (!is_null($postDate)) {
+        //     try {
+        //         $postDate = Carbon::createFromFormat('m-d-Y', $postDate)->format('Y-m-d');
+        //     } catch (\Exception $e) {
+        //         return response()->json([
+        //             'message' => 'Invalid date format. Use MM-DD-YYYY. Example: 04-07-2026',
+        //         ], 422);
+        //     }
+        // }
 
-        $postDate ??= $this->latestPostDate();
 
         $result = $dashboardService->jobList($postDate);
 

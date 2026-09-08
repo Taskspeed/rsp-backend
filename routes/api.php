@@ -202,7 +202,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/', [DashboardController::class, 'totalApplicantStatus']);
         Route::get('/summary-by-office', [DashboardController::class, 'applicantSummaryByOffice']);
         Route::get('/job-post', [DashboardController::class, 'jobPost']);
-        Route::get('/publication-date', [DashboardController::class, 'publicationDate']);
+        Route::get('/publication-date', [DashboardController::class, 'publicationDateList']);
         // Route::get('/plantilla/status', [DashboardController::class, 'getNumberOfPlantillaData']);
         // Route::get('/job/status', [DashboardController::class, 'job_post_status']);
     });

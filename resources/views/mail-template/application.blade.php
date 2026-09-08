@@ -106,6 +106,10 @@
             <img src="{{ $message->embed(public_path('images/emailHeader.png')) }}" alt="Logo" class="header-image">
 
         </div>
+           <!-- Date -->
+        <div class="date">
+            {{ $date }}
+        </div>
 
 
         <div class="content">

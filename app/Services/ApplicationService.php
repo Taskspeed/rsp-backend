@@ -369,7 +369,7 @@ class ApplicationService
 
         $smsMessage = $isUpdate
             ? "Dear {$fullName},\n\n"
-            . "Your application has been UPDATED.\n\n"
+            . "Your application has been received successfully.\n\n"
             . "Position: {$job->Position}\n"
             . "Item No: {$job->ItemNo}\n"
             . "Office: {$job->Office}\n\n"

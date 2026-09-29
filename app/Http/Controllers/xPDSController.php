@@ -195,191 +195,226 @@ class xPDSController extends Controller
         return $this->convertToArray($result);
     }
 
+    // private function getExperienceData($controlNo)
+    // {
+    //     // xExperience records
+    //     $experience = DB::table('xExperience')
+    //         ->select([
+    //             'ID as id',
+    //             'CONTROLNO',
+    //             'WFrom',
+    //             'WTo',
+    //             'WPosition',
+    //             'WCompany',
+    //             'WSalary',
+    //             'WGrade',
+    //             'Status',
+    //             'WGov',
+    //         ])
+    //         ->where('ControlNo', $controlNo)
+    //         ->get()
+    //         ->map(fn($row) => [
+    //             'id'       => $row->id,
+    //             'WFrom'    => $this->safeDate($row->WFrom),
+    //             'WTo'      => $this->safeDate($row->WTo),
+    //             'WPosition' => $this->upper($row->WPosition),
+    //             'WCompany' => $this->upper($row->WCompany),
+    //             'WSalary'  => $row->WSalary ? '₱ ' . number_format($row->WSalary, 2) : '₱ 0.00',
+    //             'WGrade'   => $row->WGrade,
+    //             'Status'   => $this->upper($row->Status),
+    //             'WGov'     => $this->upper($row->WGov),
+    //             'source'   => 'xExperience',
+    //         ]);
+
+       
+    //     $serviceRecords = DB::table('xService')
+    //         ->select([
+    //             'PMID as id',
+    //             'ControlNo',
+    //             'FromDate',
+    //             'ToDate',
+    //             'Designation',
+    //             'Office',
+    //             'Branch',
+    //             'RateDay',
+    //             'RateMon',
+    //             'Grades',
+    //             'Steps',
+    //             'Status',
+    //         ])
+    //         ->where('ControlNo', $controlNo)
+    //         ->orderBy('FromDate')
+    //         ->get();
+
+    //     // =========================
+    //     // Get latest service record
+    //     // based on ToDate then FromDate
+    //     // =========================
+    //     $latestService = $serviceRecords
+    //         ->sortByDesc(function ($row) {
+    //             return [
+    //                 $row->ToDate,
+    //                 $row->FromDate,
+    //             ];
+    //         })
+    //         ->first();
+
+    //     // =========================
+    //     // Map xService
+    //     // =========================
+    //     $service = $serviceRecords->map(function ($row) use ($latestService) {
+
+    //         $fromDate = $row->FromDate
+    //             ? \Carbon\Carbon::parse($row->FromDate)
+    //             : null;
+
+    //         $toDate = $row->ToDate
+    //             ? \Carbon\Carbon::parse($row->ToDate)
+    //             : null;
+
+    //         $isLatest = $latestService
+    //             && $row->id === $latestService->id;
+
+    //         return [
+    //             'id'        => $row->id,
+
+    //             'WFrom'     => $fromDate
+    //                 ? $fromDate->format('d/m/Y')
+    //                 : null,
+
+    //             'WTo'       => (
+    //                 $isLatest &&
+    //                 $toDate &&
+    //                 $toDate->isFuture()
+    //             )
+    //                 ? 'PRESENT'
+    //                 : ($toDate
+    //                     ? $toDate->format('d/m/Y')
+    //                     : null),
+
+    //             'WPosition' => $this->upper($row->Designation),
+
+    //             'WCompany'  => $this->upper(
+    //                 trim(($row->Office ?? '') .
+    //                     ($row->Branch ? '/' . $row->Branch : ''))
+    //             ),
+
+    //             'WSalary'   => $row->Status === 'CONTRACTUAL'
+    //                 ? '₱ ' . number_format(($row->RateDay ?? 0) * 22, 2)
+    //                 : '₱ ' . number_format(($row->RateMon ?? 0), 2),
+
+    //             'WGrade'    => trim(
+    //                 ($row->Grades ?? '') .
+    //                     ($row->Steps ? '-' . $row->Steps : '')
+    //             ),
+
+    //             'Status'    => $this->upper($row->Status),
+
+    //             'WGov'      => in_array(
+    //                 strtoupper($row->Status),
+    //                 ['CONTRACTUAL', 'HONORARIUM']
+    //             )
+    //                 ? 'NO'
+    //                 : 'YES',
+
+    //             'source'    => 'xService',
+    //         ];
+    //     });
+
+    //     // =========================
+    //     // Merge both
+    //     // =========================
+    //     return $experience
+    //         ->merge($service)
+    //         ->sortByDesc(function ($item) {
+    //             return \Carbon\Carbon::createFromFormat(
+    //                 'd/m/Y',
+    //                 $item['WFrom']
+    //             )->timestamp ?? 0;
+    //         })
+    //         ->values()
+    //         ->toArray();
+    // }
+
     private function getExperienceData($controlNo)
-    {
-        // xExperience records
-        $experience = DB::table('xExperience')
-            ->select([
-                'ID as id',
-                'CONTROLNO',
-                'WFrom',
-                'WTo',
-                'WPosition',
-                'WCompany',
-                'WSalary',
-                'WGrade',
-                'Status',
-                'WGov',
-            ])
-            ->where('ControlNo', $controlNo)
-            ->get()
-            ->map(fn($row) => [
-                'id'       => $row->id,
-                'WFrom'    => $this->safeDate($row->WFrom),
-                'WTo'      => $this->safeDate($row->WTo),
-                'WPosition' => $this->upper($row->WPosition),
-                'WCompany' => $this->upper($row->WCompany),
-                'WSalary'  => $row->WSalary ? '₱ ' . number_format($row->WSalary, 2) : '₱ 0.00',
-                'WGrade'   => $row->WGrade,
-                'Status'   => $this->upper($row->Status),
-                'WGov'     => $this->upper($row->WGov),
-                'source'   => 'xExperience',
-            ]);
+{
+    $fmt = 'm/d/Y';
 
-        // $latestService = DB::table('xService')
-        //     ->where('ControlNo', $controlNo)
-        //     ->orderByDesc('PMID')
-        //     ->first();
+    // xExperience records
+    $experience = DB::table('xExperience')
+        ->select([
+            'ID as id', 'CONTROLNO', 'WFrom', 'WTo', 'WPosition',
+            'WCompany', 'WSalary', 'WGrade', 'Status', 'WGov',
+        ])
+        ->where('ControlNo', $controlNo)
+        ->get()
+        ->map(fn($row) => [
+            'id'        => $row->id,
+            'WFrom'     => $this->safeDate($row->WFrom, $fmt),
+            'WTo'       => $this->safeDate($row->WTo, $fmt),
+            'WPosition' => $this->upper($row->WPosition),
+            'WCompany'  => $this->upper($row->WCompany),
+            'WSalary'   => $row->WSalary ? '₱ ' . number_format($row->WSalary, 2) : '₱ 0.00',
+            'WGrade'    => $row->WGrade,
+            'Status'    => $this->upper($row->Status),
+            'WGov'      => $this->upper($row->WGov),
+            'source'    => 'xExperience',
+        ]);
 
-        // xService records — mapped to xExperience format
-        // $service = DB::table('xService')
-        //     ->select([
-        //         'PMID as id',
-        //         'ControlNo',
-        //         'FromDate',
-        //         'ToDate',
-        //         'Designation',
-        //         'Office',
-        //         'Branch',
-        //         'RateDay',
-        //         'RateMon',
-        //         'Grades',
-        //         'Steps',
-        //         'Status',
-        //     ])
-        //     ->where('ControlNo', $controlNo)
-        //     ->get()
-        //     ->map(fn($row) => [
-        //         'id'        => $row->id,
-        //         'WFrom'     => $row->FromDate ? \Carbon\Carbon::parse($row->FromDate)->format('d/m/Y') : null,
+    // xService records
+    $serviceRecords = DB::table('xService')
+        ->select([
+            'PMID as id', 'ControlNo', 'FromDate', 'ToDate', 'Designation',
+            'Office', 'Branch', 'RateDay', 'RateMon', 'Grades', 'Steps', 'Status',
+        ])
+        ->where('ControlNo', $controlNo)
+        ->orderBy('FromDate')
+        ->get();
 
-        //         // If this is the latest record AND ToDate is in the future → show "Present"
-        //         'WTo'       => ($row->id === $latestService->PMID && \Carbon\Carbon::parse($row->ToDate)->isFuture())
-        //             ? 'PRESENT'
-        //             : ($row->ToDate ? \Carbon\Carbon::parse($row->ToDate)->format('d/m/Y') : null),
+    // Latest service record (by ToDate, then FromDate)
+    $latestService = $serviceRecords
+        ->sortByDesc(fn($row) => ($row->ToDate ?? '') . '|' . ($row->FromDate ?? ''))
+        ->first();
 
-        //         'WPosition' => $row->Designation,
-        //         'WCompany'  => trim($row->Office . '/' . $row->Branch),
-        //         // CONTRACTUAL: RateDay x 22, others: RateMon
-        //         'WSalary'   => $row->Status === 'CONTRACTUAL'
-        //             ? '₱ ' . number_format($row->RateDay * 22, 2)
-        //             : ($row->RateMon ? '₱ ' . number_format($row->RateMon, 2) : '₱ 0.00'),
-        //         'WGrade'    => trim($row->Grades . '-' . $row->Steps),
-        //         'Status'    => $row->Status,
-        //         'WGov' => ($row->Status === 'CONTRACTUAL' || $row->Status === 'HONORARIUM') ? 'NO' : 'YES',
-        //         'source'    => 'xService',
-        //     ]);
+    $service = $serviceRecords->map(function ($row) use ($latestService, $fmt) {
+        $fromDate = $row->FromDate ? \Carbon\Carbon::parse($row->FromDate) : null;
+        $toDate   = $row->ToDate   ? \Carbon\Carbon::parse($row->ToDate)   : null;
 
-        // ✅ Merge both collections and convert to array
-        // return $experience->merge($service)->values()->toArray();
-        $serviceRecords = DB::table('xService')
-            ->select([
-                'PMID as id',
-                'ControlNo',
-                'FromDate',
-                'ToDate',
-                'Designation',
-                'Office',
-                'Branch',
-                'RateDay',
-                'RateMon',
-                'Grades',
-                'Steps',
-                'Status',
-            ])
-            ->where('ControlNo', $controlNo)
-            ->orderBy('FromDate')
-            ->get();
+        $isLatest = $latestService && $row->id === $latestService->id;
 
-        // =========================
-        // Get latest service record
-        // based on ToDate then FromDate
-        // =========================
-        $latestService = $serviceRecords
-            ->sortByDesc(function ($row) {
-                return [
-                    $row->ToDate,
-                    $row->FromDate,
-                ];
-            })
-            ->first();
+        return [
+            'id'        => $row->id,
+            'WFrom'     => $fromDate ? $fromDate->format($fmt) : null,
+            'WTo'       => ($isLatest && $toDate && $toDate->endOfDay()->isFuture())
+                ? 'PRESENT'
+                : ($toDate ? $toDate->format($fmt) : null),
+            'WPosition' => $this->upper($row->Designation),
+            'WCompany'  => $this->upper(trim(($row->Office ?? '') . ($row->Branch ? '/' . $row->Branch : ''))),
+            'WSalary'   => $row->Status === 'CONTRACTUAL'
+                ? '₱ ' . number_format(($row->RateDay ?? 0) * 22, 2)
+                : '₱ ' . number_format(($row->RateMon ?? 0), 2),
+            'WGrade'    => trim(($row->Grades ?? '') . ($row->Steps ? '-' . $row->Steps : '')),
+            'Status'    => $this->upper($row->Status),
+            'WGov'      => in_array(strtoupper($row->Status), ['CONTRACTUAL', 'HONORARIUM'])
+                ? 'NO'
+                : 'YES',
+            'source'    => 'xService',
+        ];
+    });
 
-        // =========================
-        // Map xService
-        // =========================
-        $service = $serviceRecords->map(function ($row) use ($latestService) {
+    // Merge, sorted by WFrom (newest first)
+    return $experience
+        ->merge($service)
+        ->sortByDesc(function ($item) use ($fmt) {
+            $date = !empty($item['WFrom'])
+                ? \DateTime::createFromFormat('!' . $fmt, $item['WFrom'])
+                : false;
 
-            $fromDate = $row->FromDate
-                ? \Carbon\Carbon::parse($row->FromDate)
-                : null;
-
-            $toDate = $row->ToDate
-                ? \Carbon\Carbon::parse($row->ToDate)
-                : null;
-
-            $isLatest = $latestService
-                && $row->id === $latestService->id;
-
-            return [
-                'id'        => $row->id,
-
-                'WFrom'     => $fromDate
-                    ? $fromDate->format('d/m/Y')
-                    : null,
-
-                'WTo'       => (
-                    $isLatest &&
-                    $toDate &&
-                    $toDate->isFuture()
-                )
-                    ? 'PRESENT'
-                    : ($toDate
-                        ? $toDate->format('d/m/Y')
-                        : null),
-
-                'WPosition' => $this->upper($row->Designation),
-
-                'WCompany'  => $this->upper(
-                    trim(($row->Office ?? '') .
-                        ($row->Branch ? '/' . $row->Branch : ''))
-                ),
-
-                'WSalary'   => $row->Status === 'CONTRACTUAL'
-                    ? '₱ ' . number_format(($row->RateDay ?? 0) * 22, 2)
-                    : '₱ ' . number_format(($row->RateMon ?? 0), 2),
-
-                'WGrade'    => trim(
-                    ($row->Grades ?? '') .
-                        ($row->Steps ? '-' . $row->Steps : '')
-                ),
-
-                'Status'    => $this->upper($row->Status),
-
-                'WGov'      => in_array(
-                    strtoupper($row->Status),
-                    ['CONTRACTUAL', 'HONORARIUM']
-                )
-                    ? 'NO'
-                    : 'YES',
-
-                'source'    => 'xService',
-            ];
-        });
-
-        // =========================
-        // Merge both
-        // =========================
-        return $experience
-            ->merge($service)
-            ->sortByDesc(function ($item) {
-                return \Carbon\Carbon::createFromFormat(
-                    'd/m/Y',
-                    $item['WFrom']
-                )->timestamp ?? 0;
-            })
-            ->values()
-            ->toArray();
-    }
+            return $date ? $date->getTimestamp() : 0;
+        })
+        ->values()
+        ->toArray();
+}
 
     private function getVoluntaryData($controlNo)
     {

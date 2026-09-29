@@ -800,11 +800,11 @@ class ReportService
                                 ->orOn('submission.ControlNo', '=', 'rating_score.ControlNo');
                         });
                 })
-                ->where('submission.status', 'Qualified') 
+                ->where('submission.status', 'Qualified')
                 ->where(function ($query) {
-                 $query->where('submission.application_status', '!=', 'Withdrawn')
-                ->orWhereNull('submission.application_status');
-                    })
+                    $query->where('submission.application_status', '!=', 'Withdrawn')
+                        ->orWhereNull('submission.application_status');
+                })
                 ->where('rating_score.job_batches_rsp_id', $jobPost->id)
                 ->get();
 
@@ -886,10 +886,7 @@ class ReportService
     //new list of qualified
     public function listQualified($postDate, $applicantType)
     {
-        // Log::info('php ini', [
-        //     'memory_limit' => ini_get('memory_limit'),
-        //     'php_ini'      => php_ini_loaded_file()
-        // ]);
+
 
         try {
             ini_set('max_execution_time', 3600);
@@ -897,7 +894,6 @@ class ReportService
             // ✅ Normalize any date format to Y-m-d
             $postDate = Carbon::parse($postDate)->toDateString();
 
-            // Log::info('postDate normalized', ['postDate' => $postDate]);
 
             // =====================================================
             // FETCH JOB POSTS (no submissions in with())
@@ -941,6 +937,7 @@ class ReportService
                     'experience_qualification',
                     'training_qualification',
                     'eligibility_qualification',
+                    'created_at'
                 )
                 ->get()
                 ->map(function ($s) {
@@ -988,6 +985,11 @@ class ReportService
             $extTrainings     = $extTrainIds->chunk(1000)->flatMap(fn($c) => Learning_development::whereIn('id', $c)->get()->all())->keyBy('id');
             $extEligibilities = $extEligIds->chunk(1000)->flatMap(fn($c) => Civil_service_eligibity::whereIn('id', $c)->get()->all())->keyBy('id');
 
+            $extExperiences = $extExperiences->map(function ($r) {
+                $r->work_date_from = $this->externalDateToMdy($r->work_date_from);
+                $r->work_date_to   = $this->externalDateToMdy($r->work_date_to);
+                return $r;
+            });
             // --- INTERNAL (DB tables) chunked at 1000 ---
             $intEducations    = $intEduIds->chunk(1000)->flatMap(fn($c) => DB::table('xEducation')->whereIn('PMID', $c)->get()->all())->keyBy('PMID');
             $intExperiences   = $intExpIds->chunk(1000)->flatMap(fn($c) => DB::table('xExperience')->whereIn('ID', $c)->get()->all())->keyBy('ID');
@@ -1073,7 +1075,10 @@ class ReportService
                             'eligibility_remark' => $submission->eligibility_remark ?? null,
 
                             'education_text'     => $this->formatEducationForQualifiedExternal($educationRecords),
-                            'experience_text'    => $this->formatExperienceForQualifiedExternal($experienceRecords),
+                            'experience_text' => $this->formatExperienceForQualifiedExternal(
+                                $experienceRecords,
+                                $submission->created_at // ← add
+                            ),
                             'training_text'      => $this->formatTrainingForQualifiedExternal($trainingRecords),
                             'eligibility_text'   => $this->formatEligibilityForQualifiedExternal($eligibilityRecords),
                         ];
@@ -1093,22 +1098,29 @@ class ReportService
                         $trainingRecords    = $intTrainings->filter(fn($r) => in_array($r->PMID, $submission->training_qualification ?? []));
                         $eligibilityRecords = $intEligibilities->filter(fn($r) => in_array($r->PMID, $submission->eligibility_qualification ?? []));
 
-                        // ✅ xService records — match exactly what getExperienceRecordsInternal does
+                        $eligibilityRecords = $intEligibilities->filter(fn($r) => in_array($r->PMID, $submission->eligibility_qualification ?? []));
+
+                        // ✅ Reference date = date of submission (00:00:00), fallback today
+                        $refTs   = !empty($submission->created_at)
+                            ? strtotime(date('Y-m-d', strtotime($submission->created_at)))
+                            : strtotime('today');
+                        $refDate = date('m/d/Y', $refTs);
+
+                        // ✅ xService records
                         $serviceRecords = collect($intServiceRecords->get($submission->ControlNo, []));
 
-                        // ✅ Find latest record (by WTo then WFrom) — same logic as original
                         $latestServiceId = $serviceRecords
                             ->sortByDesc(fn($r) => [$r->WTo, $r->WFrom])
                             ->first()?->id;
 
-                        $serviceRecords = $serviceRecords->map(function ($r) use ($latestServiceId) {
+                        $serviceRecords = $serviceRecords->map(function ($r) use ($latestServiceId, $refTs) {
+                            $r = clone $r;
+
                             $isLatest = $r->id === $latestServiceId;
+                            $toDate   = !empty($r->WTo) ? strtotime($r->WTo) : null;
 
-                            $toDate = !empty($r->WTo) ? strtotime($r->WTo) : null;
-
-                            // ✅ Cap future WTo to today only on latest record
-                            if ($isLatest && $toDate && $toDate > time()) {
-                                $toDate = time();
+                            if ($isLatest && $toDate && $toDate > $refTs) {
+                                $toDate = $refTs;
                             }
 
                             $r->WFrom = !empty($r->WFrom) ? date('m/d/Y', strtotime($r->WFrom)) : null;
@@ -1117,28 +1129,29 @@ class ReportService
                             return $r;
                         });
 
-                        // ✅ xExperience records filtered by qualification IDs
+                        // ✅ xExperience records
                         $xExpRecords = $intExperiences->filter(
                             fn($r) => in_array($r->ID, $submission->experience_qualification ?? [])
-                        )->values()->map(function ($r) {
+                        )->values()->map(function ($r) use ($refDate) {
+                            $r = clone $r;
+
                             $r->id = $r->ID;
 
-                            $r->WFrom = (!empty($r->WFrom) && strtoupper(trim($r->WFrom)) !== 'CURRENT')
-                                ? date('m/d/Y', strtotime($r->WFrom))
-                                : null;
+                            $wFrom = strtoupper(trim($r->WFrom ?? ''));
+                            $r->WFrom = in_array($wFrom, ['', 'CURRENT', 'PRESENT'], true)
+                                ? null
+                                : date('m/d/Y', strtotime($r->WFrom));
 
                             $wTo = strtoupper(trim($r->WTo ?? ''));
-                            $r->WTo = ($wTo === 'CURRENT' || $wTo === '')
-                                ? date('m/d/Y')
+                            $r->WTo = in_array($wTo, ['', 'CURRENT', 'PRESENT'], true)
+                                ? $refDate
                                 : date('m/d/Y', strtotime($r->WTo));
 
                             $r->experience_status = 'EXPERIENCE';
                             return $r;
                         });
 
-                        // ✅ Merge — same as original return $serviceRecords->merge($experienceRecords)
                         $experienceRecords = $serviceRecords->merge($xExpRecords->values());
-
                         $applicants[] = [
                             'controlno'           => $submission->ControlNo,
                             'firstname'           => $personal->Firstname,
@@ -1679,45 +1692,6 @@ class ReportService
     // FORMATTING HELPERS
     // =====================================================
 
-    // ✅ Helper: Convert total hours to years, months, days
-    public function convertHoursToYearsMonthsDays(int $totalHours, string $label = ''): string
-    {
-        $hoursPerDay   = 8;
-        $daysPerMonth  = 22;
-        $monthsPerYear = 12;
-
-        $totalDays = (int) floor($totalHours / $hoursPerDay);
-        $years     = (int) floor($totalDays / ($daysPerMonth * $monthsPerYear));
-        $remaining = $totalDays % ($daysPerMonth * $monthsPerYear);
-        $months    = (int) floor($remaining / $daysPerMonth);
-        $days      = $remaining % $daysPerMonth;
-
-        $parts = [];
-        if ($years > 0)  $parts[] = "{$years} " . ($years  === 1 ? 'year'  : 'years');
-        if ($months > 0) $parts[] = "{$months} " . ($months === 1 ? 'month' : 'months');
-        if ($days > 0)   $parts[] = "{$days} "   . ($days   === 1 ? 'day'   : 'days');
-
-        $result = implode(', ', $parts) ?: '0 days';
-
-        return $label ? "{$result} {$label}" : $result;
-    }
-
-    // ✅ Fast weekday counter — no day-by-day loop, pure math
-    private function countWeekdaysBetween(\DateTime $start, \DateTime $end): int
-    {
-        $days     = (int) $start->diff($end)->days;
-        $weeks    = intdiv($days, 7);
-        $extra    = $days % 7;
-        $startDow = (int) $start->format('N'); // 1=Mon, 7=Sun
-        $weekdays = $weeks * 5;
-
-        for ($i = 0; $i < $extra; $i++) {
-            $dow = (($startDow - 1 + $i) % 7) + 1;
-            if ($dow < 6) $weekdays++;
-        }
-
-        return $weekdays;
-    }
 
     // --- EXTERNAL format helpers ---
 
@@ -1748,29 +1722,125 @@ class ReportService
         return implode('<br>', $formatted);
     }
 
-    public function formatExperienceForQualifiedExternal($experienceRecords)
+
+    public function formatExperienceForQualifiedExternal($experienceRecords, $submissionDate = null)
     {
         if ($experienceRecords->isEmpty()) {
             return '';
         }
 
-        $totalHours = 0;
-        foreach ($experienceRecords as $exp) {
-            $from = $exp->work_date_from ?? null;
-            $to   = $exp->work_date_to   ?? null;
+        $tz        = new \DateTimeZone('Asia/Manila');
+        $refDate   = $this->resolveSubmissionDate($submissionDate, $tz);
+        $keywords  = ['PRESENT', 'CURRENT'];
+        $ranges    = [];
 
-            if ($from && $to) {
-                $start = \DateTime::createFromFormat('d/m/Y', $from);
-                $end   = \DateTime::createFromFormat('d/m/Y', $to);
-                if ($start && $end && $end >= $start) {
-                    $totalHours += $this->countWeekdaysBetween($start, $end) * 8;
-                }
+        foreach ($experienceRecords as $exp) {
+            $from = strtoupper(trim((string) ($exp->work_date_from ?? '')));
+            $to   = strtoupper(trim((string) ($exp->work_date_to ?? '')));
+
+            if ($from === '') continue;
+
+            $start = in_array($from, $keywords, true)
+                ? clone $refDate
+                : \DateTime::createFromFormat('!m/d/Y', $from, $tz);
+
+            $end = in_array($to, array_merge([''], $keywords), true)
+                ? clone $refDate
+                : \DateTime::createFromFormat('!m/d/Y', $to, $tz);
+
+            if ($start && $end && $end >= $start) {
+                $ranges[] = [$start, $end];
             }
         }
 
-        return $this->convertHoursToYearsMonthsDays($totalHours, 'of relevant experience');
+        if (empty($ranges)) {
+            return '';
+        }
+
+        return $this->formatDurationFromRanges($ranges, 'of relevant experience');
     }
 
+    private function resolveSubmissionDate($value, \DateTimeZone $tz): \DateTime
+    {
+        try {
+            if (!empty($value)) {
+                return (new \DateTime((string) $value, $tz))->setTime(0, 0, 0);
+            }
+        } catch (\Exception $e) {
+            // fall through
+        }
+
+        return new \DateTime('today', $tz); // fallback if created_at is missing/unparseable
+    }
+    public function formatDurationFromRanges(array $ranges, string $label = ''): string
+    {
+        // 1. Sort by start date
+        usort($ranges, fn($a, $b) => $a[0] <=> $b[0]);
+
+        // 2. Merge overlapping ranges lang (walang +1, base lang sa data)
+        $merged = [];
+        foreach ($ranges as [$start, $end]) {
+            $start = clone $start;
+            $end   = clone $end;
+
+            if (empty($merged)) {
+                $merged[] = [$start, $end];
+                continue;
+            }
+
+            $last    = count($merged) - 1;
+            $lastEnd = $merged[$last][1];
+
+            if ($start <= $lastEnd) {
+                if ($end > $lastEnd) {
+                    $merged[$last][1] = $end;
+                }
+            } else {
+                $merged[] = [$start, $end];
+            }
+        }
+
+        // 3. Calendar diff per merged range (walang +1)
+        $years = $months = $days = 0;
+        foreach ($merged as [$start, $end]) {
+            $diff    = $start->diff($end);
+            $years  += $diff->y;
+            $months += $diff->m;
+            $days   += $diff->d;
+        }
+
+        // 4. Carry over (30 days = 1 month)
+        $months += intdiv($days, 30);
+        $days    = $days % 30;
+        $years  += intdiv($months, 12);
+        $months  = $months % 12;
+
+        $parts = [];
+        if ($years > 0)  $parts[] = "{$years} "  . ($years  === 1 ? 'year'  : 'years');
+        if ($months > 0) $parts[] = "{$months} " . ($months === 1 ? 'month' : 'months');
+        if ($days > 0)   $parts[] = "{$days} "   . ($days   === 1 ? 'day'   : 'days');
+
+        $result = implode(', ', $parts) ?: '0 days';
+
+        return $label ? "{$result} {$label}" : $result;
+    }
+    private function externalDateToMdy($value)
+    {
+        $raw = trim((string) $value);
+
+        if ($raw === '' || in_array(strtoupper($raw), ['PRESENT', 'CURRENT'], true)) {
+            return $value;
+        }
+
+        $date   = \DateTime::createFromFormat('!d/m/Y', $raw);
+        $errors = \DateTime::getLastErrors();
+
+        if (!$date || ($errors && ($errors['warning_count'] > 0 || $errors['error_count'] > 0))) {
+            return $value; // hindi d/m/Y, huwag galawin
+        }
+
+        return $date->format('m/d/Y');
+    }
     public function formatTrainingForQualifiedExternal($trainingRecords)
     {
         if ($trainingRecords->isEmpty()) {
@@ -1830,21 +1900,6 @@ class ReportService
         return implode('<br>', $formatted);
     }
 
-    // public function formatEducationForQualifiedInternal($educationRecords)
-    // {
-    //     if ($educationRecords->isEmpty()) {
-    //         return '.';
-    //     }
-
-    //     $formatted = [];
-    //     foreach ($educationRecords as $edu) {
-    //         $degree = $edu->Degree ?? '';
-    //         $unit   = $edu->NumUnits ?? '';
-    //         $formatted[] = "• {$degree} ({$unit} units)";
-    //     }
-
-    //     return implode('<br>', $formatted);
-    // }
 
     public function formatExperienceForQualifiedInternal($experienceRecords)
     {
@@ -1852,21 +1907,27 @@ class ReportService
             return '';
         }
 
-        $totalHours = 0;
+        $ranges = [];
         foreach ($experienceRecords as $exp) {
             $from = $exp->WFrom ?? null;
             $to   = $exp->WTo   ?? null;
 
             if ($from && $to) {
-                $start = \DateTime::createFromFormat('m/d/Y', $from);
-                $end   = \DateTime::createFromFormat('m/d/Y', $to);
+                // '!' para zero na ang time (00:00:00), hindi current time
+                $start = \DateTime::createFromFormat('!m/d/Y', $from);
+                $end   = \DateTime::createFromFormat('!m/d/Y', $to);
+
                 if ($start && $end && $end >= $start) {
-                    $totalHours += $this->countWeekdaysBetween($start, $end) * 8;
+                    $ranges[] = [$start, $end];
                 }
             }
         }
 
-        return $this->convertHoursToYearsMonthsDays($totalHours, 'of relevant experience');
+        if (empty($ranges)) {
+            return '';
+        }
+
+        return $this->formatDurationFromRanges($ranges, 'of relevant experience');
     }
 
     public function formatTrainingForQualifiedInternal($trainingRecords)
@@ -2043,14 +2104,14 @@ class ReportService
             ->leftJoin('applicant_exam_scores', 'applicant_exam_scores.submission_id', '=', 'submission.id') // ← new join
 
             ->where('rating_score.job_batches_rsp_id', $jobpostId)
-            ->whereIn('submission.status', ['Qualified','Hired']) 
+            ->whereIn('submission.status', ['Qualified', 'Hired'])
             ->where(function ($query) {
-            $query->where('submission.application_status', '!=', 'Withdrawn')
-                ->orWhereNull('submission.application_status');
-                 })
+                $query->where('submission.application_status', '!=', 'Withdrawn')
+                    ->orWhereNull('submission.application_status');
+            })
             ->get();
 
-    
+
         $scoresByApplicant = $allScores->groupBy(
             fn($row) => $row->nPersonalInfo_id ?: 'control_' . $row->ControlNo
         );
@@ -2079,7 +2140,7 @@ class ReportService
                 $lastname  = $active->Surname   ?? null;
                 $pics      = $active->Pics ?? null;
 
-                 if (!empty($active->BirthDate)) {
+                if (!empty($active->BirthDate)) {
                     try {
                         $age = Carbon::parse($active->BirthDate)->age;
                     } catch (\Exception $e) {
@@ -2103,7 +2164,7 @@ class ReportService
                     }
                 }
 
-                 if ($submissionModel) {
+                if ($submissionModel) {
                     $educationRecords   = $submissionModel->getEducationRecordsInternal();
                     $eligibilityRecords = $submissionModel->getEligibilityRecordsInternal();
                 }
@@ -2134,13 +2195,13 @@ class ReportService
             if ($firstRow->nPersonalInfo_id) {
                 $personalInfo = \App\Models\excel\nPersonal_info::find($firstRow->nPersonalInfo_id);
                 $rawImagePath = $personalInfo->image_path ?? null;
-                 $rawDob = $personalInfo->date_of_birth ?? null; // ⚠️ rename to your actual column if different
-                    if (!empty($rawDob)) {
-                        try {
-                            $age = Carbon::createFromFormat('d/m/Y', trim($rawDob))->age;
-                        } catch (\Exception $e) {
-                            $age = null;
-                        }
+                $rawDob = $personalInfo->date_of_birth ?? null; // ⚠️ rename to your actual column if different
+                if (!empty($rawDob)) {
+                    try {
+                        $age = Carbon::createFromFormat('d/m/Y', trim($rawDob))->age;
+                    } catch (\Exception $e) {
+                        $age = null;
+                    }
                 }
 
                 if ($rawImagePath) {
@@ -2151,10 +2212,10 @@ class ReportService
                     }
                 }
 
-                 if ($submissionModel) {
-                $educationRecords   = $submissionModel->getEducationRecordsExternal();
-                $eligibilityRecords = $submissionModel->getEligibilityRecordsExternal();
-              }
+                if ($submissionModel) {
+                    $educationRecords   = $submissionModel->getEducationRecordsExternal();
+                    $eligibilityRecords = $submissionModel->getEligibilityRecordsExternal();
+                }
             }
 
             // ── Per-rater breakdown ────────────────────────────────────────────
@@ -2198,7 +2259,7 @@ class ReportService
                 'submission_id'     => $firstRow->submission_id,
                 'firstname'         => $firstname,
                 'lastname'          => $lastname,
-                 'age'               => $age, // ✅ new
+                'age'               => $age, // ✅ new
                 'image_url'         => $imageUrl,
                 'office'            => $office ?? null,
                 'current_position'  => $designation ?? null,
@@ -2820,7 +2881,7 @@ class ReportService
                 }
 
                 // ── Current office/position (once per person, not per application) ──
-                $current_service = xService::select('ControlNo','ToDate','FromDate','Office','Designation','Status')
+                $current_service = xService::select('ControlNo', 'ToDate', 'FromDate', 'Office', 'Designation', 'Status')
                     ->where('ControlNo', $controlNo)
                     ->orderByDesc('ToDate')
                     ->orderByDesc('FromDate')

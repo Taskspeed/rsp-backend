@@ -232,25 +232,7 @@ class Submission extends Model
             return $row;
         });
 
-        // ✅ Fetch from xExperience (private/external experience records)
-        // $experienceRecords = DB::table('xExperience')
-        //     ->whereIn('ID', $experienceQualification)
-        //     ->get()
-        //     ->map(function ($record) {
-        //         // ✅ Normalize WFrom
-        //         $record->WFrom = ($record->WFrom && strtoupper(trim($record->WFrom)) !== 'CURRENT')
-        //             ? \Carbon\Carbon::parse($record->WFrom)->format('m/d/Y')
-        //             : null;
-
-        //         // ✅ Normalize WTo — treat "CURRENT" as today
-        //         $wTo = strtoupper(trim($record->WTo ?? ''));
-        //         $record->WTo = ($wTo === 'CURRENT' || $wTo === '')
-        //             ? \Carbon\Carbon::now()->format('m/d/Y')  // treat as present
-        //             : \Carbon\Carbon::parse($record->WTo)->format('m/d/Y');
-
-        //         $record->experience_status = 'EXPERIENCE';
-        //         return $record;
-        //     });
+        
         $experienceRecords = DB::table('xExperience')
             ->whereIn('ID', $experienceQualification)
             ->get()

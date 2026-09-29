@@ -453,6 +453,16 @@ class ApplicantService
             })->toArray(),
 
 
+            // 'work_experience' => collect($info['work_experience'] ?? [])->map(function ($exp) {
+            //     if (!empty($exp['attachment_path'])) {
+            //         $exp['attachment_url'] = filter_var($exp['attachment_path'], FILTER_VALIDATE_URL)
+            //             ? $exp['attachment_path']
+            //             : asset('storage/' . $exp['attachment_path']);
+            //     } else {
+            //         $exp['attachment_url'] = null;
+            //     }
+            //     return $exp;
+            // })->toArray(),
             'work_experience' => collect($info['work_experience'] ?? [])->map(function ($exp) {
                 if (!empty($exp['attachment_path'])) {
                     $exp['attachment_url'] = filter_var($exp['attachment_path'], FILTER_VALIDATE_URL)
@@ -461,6 +471,15 @@ class ApplicantService
                 } else {
                     $exp['attachment_url'] = null;
                 }
+
+                // External applicants: stored as d/m/Y -> output m/d/Y
+                if (isset($exp['work_date_from'])) {
+                    $exp['work_date_from'] = $this->externalDateToMdy($exp['work_date_from']);
+                }
+                if (isset($exp['work_date_to'])) {
+                    $exp['work_date_to'] = $this->externalDateToMdy($exp['work_date_to']);
+                }
+
                 return $exp;
             })->toArray(),
             'voluntary_work' => $info['voluntary_work'] ?? [],
@@ -481,6 +500,23 @@ class ApplicantService
         ], 200, [], JSON_UNESCAPED_SLASHES); // 👈 this is the key fix
     }
 
+    private function externalDateToMdy($value)
+{
+    $raw = trim((string) $value);
+
+    if ($raw === '' || in_array(strtoupper($raw), ['PRESENT', 'CURRENT'], true)) {
+        return $value;
+    }
+
+    $date   = \DateTime::createFromFormat('!d/m/Y', $raw);
+    $errors = \DateTime::getLastErrors();
+
+    if (!$date || ($errors && ($errors['warning_count'] > 0 || $errors['error_count'] > 0))) {
+        return $value; // hindi d/m/Y, huwag galawin
+    }
+
+    return $date->format('m/d/Y');
+}
     private function normalizeDate($date): ?string
     {
         if (empty($date)) {

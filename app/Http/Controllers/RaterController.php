@@ -195,7 +195,11 @@ class RaterController extends Controller
     {
         // ✅ Fetch job posts excluding certain statuses
         $jobs = JobBatchesRsp::select('id', 'Office', 'Position', 'status')
-            ->whereNotIn('status', ['unoccupied', 'occupied', 'republished'])
+           ->whereNotIn('status', [
+                'Unoccupied',
+                'Occupied',
+                'Republished',
+            ])
             ->get();
 
         // ✅ Get unique office names from the job list

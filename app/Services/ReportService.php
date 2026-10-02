@@ -1178,7 +1178,12 @@ class ReportService
                         ];
                     }
                 }
+                usort($applicants, fn($a, $b) => $this->compareByLastname($a, $b));
 
+                // Log::info('sorted applicants', [
+                //     'job_id' => $job->id,
+                //     'names'  => array_column($applicants, 'lastname'),
+                // ]);
                 $responseJobs[] = [
                     'id'              => $job->id,
                     'Office'          => $job->Office,
@@ -1216,6 +1221,21 @@ class ReportService
                 'line'    => $e->getLine(),
             ], 500);
         }
+    }
+
+    private function compareByLastname(array $a, array $b): int
+    {
+        static $collator = null;
+        if ($collator === null && class_exists(\Collator::class)) {
+            $collator = new \Collator('en_US');
+        }
+
+        $lastA = trim($a['firstname'] ?? '');
+        $lastB = trim($b['firstname'] ?? '');
+
+        return $collator
+            ? $collator->compare($lastA, $lastB)
+            : strcasecmp($lastA, $lastB);
     }
 
     public function listQualifiedYellow($postDate, $applicantType)

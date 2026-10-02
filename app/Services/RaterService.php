@@ -616,13 +616,28 @@ class RaterService
                 'training'        => $trainingData,
                 'eligibity'       => $eligibityData,
             ];
-        });
+        })->sort(fn($a, $b) => $this->compareByLastname($a, $b))
+            ->values();
 
         return response()->json([
             'status'    => true,
             'criteria'  => $criteria,
             'applicants' => $applicants,
         ]);
+    }
+    private function compareByLastname(array $a, array $b): int
+    {
+        static $collator = null;
+        if ($collator === null && class_exists(\Collator::class)) {
+            $collator = new \Collator('en_US');
+        }
+
+        $lastA = trim($a['firstname'] ?? '');
+        $lastB = trim($b['firstname'] ?? '');
+
+        return $collator
+            ? $collator->compare($lastA, $lastB)
+            : strcasecmp($lastA, $lastB);
     }
 
     // fetch all raters
@@ -1105,7 +1120,7 @@ class RaterService
             ], 500);
         }
     }
-  
+
     // fetch the score of applicant rate by rater
     public function getScoreOfApplicantRateByRater($validated) // jobpost id
     {

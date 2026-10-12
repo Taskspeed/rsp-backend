@@ -402,8 +402,12 @@ class RaterService
             ->get()
             ->keyBy('job_batches_rsp_id'); // key by job id for easy lookup
 
-        $assignedJobs = \App\Models\JobBatchesRsp::select('id', 'Office', 'Position')
+        $assignedJobs = \App\Models\JobBatchesRsp::select('id', 'Office', 'Position', 'status')
             ->whereIn('id', $jobBatchesUser->keys())
+            ->where(function ($q) {
+                $q->whereNull('status')
+                    ->orWhereRaw("LTRIM(RTRIM(LOWER(status))) NOT IN ('Occupied', 'Unoccupied')");
+            })
             ->get()
             ->map(function ($job) use ($jobBatchesUser) {
                 $pivot = $jobBatchesUser[$job->id] ?? null;
@@ -417,6 +421,7 @@ class RaterService
             'assigned_jobs' => $assignedJobs, // ✅ return the collection directly
         ]);
     }
+    
     // fetch the criteria and applicant of job post
     public function getCriteriaOfJobpostAndApplicant($id) // jobpost id
     {
